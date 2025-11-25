@@ -40,6 +40,13 @@ services:
       # Payment gateways
       MERCADOPAGO_ACCESS_TOKEN: ${MERCADOPAGO_ACCESS_TOKEN}
       MERCADOPAGO_PUBLIC_KEY: ${MERCADOPAGO_PUBLIC_KEY}
+      MP_ACCESS_TOKEN: ${MP_ACCESS_TOKEN:-${MERCADOPAGO_ACCESS_TOKEN}}
+      MP_PUBLIC_KEY: ${MP_PUBLIC_KEY:-${MERCADOPAGO_PUBLIC_KEY}}
+      MP_INTEGRATOR_ID: ${MP_INTEGRATOR_ID:-}
+      OPENPAY_MERCHANT_ID: ${OPENPAY_MERCHANT_ID}
+      OPENPAY_PRIVATE_KEY: ${OPENPAY_PRIVATE_KEY}
+      OPENPAY_PUBLIC_KEY: ${OPENPAY_PUBLIC_KEY}
+      OPENPAY_PRODUCTION: ${OPENPAY_PRODUCTION:-false}
       # Email
       SMTP_HOST: ${SMTP_HOST}
       SMTP_PORT: ${SMTP_PORT:-587}
@@ -66,6 +73,22 @@ services:
     restart: always
     ports:
       - "${WEB_PORT:-80}:80"
+    depends_on:
+      - api
+    networks:
+      - monomarket-network
+
+  # Frontend Scanner (React + Vite)
+  scanner:
+    build:
+      context: .
+      dockerfile: apps/scanner/Dockerfile
+      args:
+        VITE_API_URL: ${SCANNER_VITE_API_URL:-http://localhost:3000/api}
+    container_name: monomarket-scanner
+    restart: always
+    ports:
+      - "${SCANNER_PORT:-5174}:80"
     depends_on:
       - api
     networks:

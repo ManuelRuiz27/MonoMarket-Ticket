@@ -167,14 +167,7 @@ class ApiClient {
     }) {
         return this.request<CheckoutSessionResponse>('/checkout/session', {
             method: 'POST',
-            body: JSON.stringify({
-                ...data,
-                buyer: {
-                    name: data.name,
-                    email: data.email,
-                    phone: data.phone,
-                },
-            }),
+            body: JSON.stringify(data),
         });
     }
 

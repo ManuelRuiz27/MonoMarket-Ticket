@@ -10,7 +10,7 @@
 ### Opción 1: Docker Compose (Recomendado)
 
 ```powershell
-# Iniciar todos los servicios (PostgreSQL, API, Frontend)
+# Iniciar todos los servicios (PostgreSQL, API, Frontend web y Scanner)
 pnpm run docker:dev:build
 
 # La primera vez tardará más porque construye las imágenes
@@ -19,7 +19,8 @@ pnpm run docker:dev
 ```
 
 Servicios disponibles:
-- **Frontend**: http://localhost:5173
+- **Frontend Web**: http://localhost:5173
+- **Scanner**: http://localhost:5174
 - **Backend API**: http://localhost:3000
 - **PostgreSQL**: localhost:5432
 
@@ -37,18 +38,22 @@ pnpm run docker:clean
 
 ```
 monomarket-tickets/
-├── docker-compose.yml          # Producción
-├── docker-compose.dev.yml      # Desarrollo
-├── .dockerignore               # Archivos excluidos
-├── .env.example                # Variables de entorno
-├── apps/
-│   ├── api/
-│   │   ├── Dockerfile          # Imagen de producción API
-│   │   └── Dockerfile.dev      # Imagen de desarrollo API
-│   └── web/
-│       ├── Dockerfile          # Imagen de producción Web
-│       ├── Dockerfile.dev      # Imagen de desarrollo Web
-│       └── nginx.conf          # Configuración nginx
+|- docker-compose.yml          # Produccion
+|- docker-compose.dev.yml      # Desarrollo
+|- .dockerignore               # Archivos excluidos
+|- .env.example                # Variables de entorno
+|- apps/
+|  |- api/
+|  |  |- Dockerfile          # Imagen de produccion API
+|  |  |- Dockerfile.dev      # Imagen de desarrollo API
+|  |- web/
+|  |  |- Dockerfile          # Imagen de produccion Web
+|  |  |- Dockerfile.dev      # Imagen de desarrollo Web
+|  |  |- nginx.conf          # Configuracion nginx
+|  |- scanner/
+|     |- Dockerfile          # Imagen de produccion Scanner
+|     |- Dockerfile.dev      # Imagen de desarrollo Scanner
+|     |- nginx.conf          # Configuracion nginx
 ```
 
 ## 🔧 Desarrollo con Docker
@@ -70,6 +75,7 @@ docker-compose -f docker-compose.dev.yml logs -f
 # Ver logs de un servicio específico
 docker-compose -f docker-compose.dev.yml logs -f api
 docker-compose -f docker-compose.dev.yml logs -f web
+docker-compose -f docker-compose.dev.yml logs -f scanner
 docker-compose -f docker-compose.dev.yml logs -f postgres
 ```
 
@@ -97,6 +103,9 @@ docker-compose -f docker-compose.dev.yml restart api
 
 # Reiniciar solo el frontend
 docker-compose -f docker-compose.dev.yml restart web
+
+# Reiniciar solo el scanner
+docker-compose -f docker-compose.dev.yml restart scanner
 ```
 
 ## 🏭 Producción con Docker
@@ -112,10 +121,11 @@ cp .env.example .env
 
 **Variables importantes a configurar:**
 - `JWT_SECRET`: Token secreto seguro
-- `POSTGRES_PASSWORD`: Contraseña segura de PostgreSQL
-- `VITE_API_URL`: URL de tu API en producción
+- `POSTGRES_PASSWORD`: Contrase?a segura de PostgreSQL
+- `VITE_API_URL` y `WEB_PORT`: URL y puerto publico del frontend principal
+- `SCANNER_VITE_API_URL` y `SCANNER_PORT`: URL y puerto publico del scanner
 - Claves de Mercado Pago
-- Configuración SMTP para emails
+- Configuraci?n SMTP para emails
 
 ### 2. Construir y Ejecutar
 

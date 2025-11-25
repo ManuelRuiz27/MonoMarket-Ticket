@@ -1,4 +1,5 @@
 import { Body, Controller, Post, Req } from '@nestjs/common';
+import { logger } from '@monomarket/config';
 import { CheckoutService } from './checkout.service';
 import { CreateCheckoutSessionDto } from './dto/create-checkout-session.dto';
 
@@ -24,6 +25,18 @@ export class CheckoutController {
     }
 
     private handleSessionCreation(dto: CreateCheckoutSessionDto, req: any) {
+        logger.info(
+            {
+                eventId: dto.eventId,
+                tickets: dto.tickets?.map((ticket) => ({
+                    templateId: ticket.templateId,
+                    quantity: ticket.quantity,
+                })),
+                email: dto.email,
+            },
+            'Incoming checkout session request',
+        );
+
         const ip = this.extractIp(req);
         const userAgent = req.headers['user-agent'] ?? 'unknown';
         const termsVersion = process.env.TERMS_VERSION ?? 'v1';

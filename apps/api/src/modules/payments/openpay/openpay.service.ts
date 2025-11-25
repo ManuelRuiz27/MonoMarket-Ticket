@@ -102,7 +102,15 @@ export class OpenpayService {
     private dispatchCharge(payload: OpenpayChargePayload, clientIp: string): Promise<OpenpayChargeResponse> {
         return new Promise((resolve, reject) => {
             forwardedForContext.run(clientIp, () => {
-                this.client.charges.create(payload, (error: OpenpayError | null, charge: OpenpayChargeResponse | null) => {
+                const chargesCreate = this.client.charges.create as (
+                    data: OpenpayChargePayload,
+                    callback: (error: unknown, charge: unknown) => void,
+                ) => void;
+
+                chargesCreate(payload, (rawError, rawCharge) => {
+                    const error = rawError as OpenpayError | null;
+                    const charge = rawCharge as OpenpayChargeResponse | null;
+
                     if (error) {
                         reject(error);
                         return;

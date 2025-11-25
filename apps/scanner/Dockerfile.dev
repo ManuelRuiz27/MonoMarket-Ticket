@@ -1,0 +1,27 @@
+# Dockerfile para desarrollo del scanner con hot reload
+FROM node:20-alpine
+
+RUN apk add --no-cache libc6-compat
+
+WORKDIR /app
+
+# Instalar pnpm
+RUN npm install -g pnpm
+
+# Copiar manifests necesarios
+COPY package.json pnpm-workspace.yaml pnpm-lock.yaml* ./
+COPY packages/tsconfig/package.json ./packages/tsconfig/
+COPY apps/scanner/package.json ./apps/scanner/
+
+# Instalar dependencias
+RUN pnpm install --frozen-lockfile
+
+# Copiar codigo fuente
+COPY packages ./packages
+COPY apps/scanner ./apps/scanner
+
+WORKDIR /app/apps/scanner
+
+EXPOSE 5174
+
+CMD ["sh", "-c", "pnpm run dev -- --host 0.0.0.0 --port 5174"]
