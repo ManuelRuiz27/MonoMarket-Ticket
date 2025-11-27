@@ -44,6 +44,10 @@ export class CreateOrganizerEventDto {
     isPublic?: boolean;
 
     @IsOptional()
+    @IsBoolean()
+    isUnlisted?: boolean;
+
+    @IsOptional()
     @IsEnum(EventStatus)
     status?: EventStatus;
 

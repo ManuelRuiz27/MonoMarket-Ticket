@@ -84,7 +84,7 @@ export class OpenpayService {
             }, 'Cargo Openpay autorizado');
 
             return response;
-        } catch (error) {
+        } catch (error: any) {
             const providerError = error as OpenpayError;
             logger.warn({
                 orderId: dto.orderId,

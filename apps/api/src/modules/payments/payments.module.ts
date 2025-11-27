@@ -9,6 +9,7 @@ import { PaymentTasksService } from '../../payments/payment-tasks.service';
 import { ORDER_FULFILLMENT_QUEUE } from '../../payments/payment.constants';
 import { OrderFulfillmentProcessor } from '../../payments/order-fulfillment.processor';
 import { MailModule } from '../mail/mail.module';
+import { EmailModule } from '../email/email.module';
 import { PaymentsConfigModule } from './payments-config.module';
 import { OpenpayModule } from './openpay/openpay.module';
 import { MercadoPagoModule } from './mercadopago/mercadopago.module';
@@ -31,6 +32,7 @@ try {
     imports: [
         PrismaModule,
         MailModule,
+        EmailModule,
         PaymentsConfigModule,
         OpenpayModule,
         MercadoPagoModule,

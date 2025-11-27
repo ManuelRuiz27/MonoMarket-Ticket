@@ -1,7 +1,8 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, Logger } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCheckoutSessionDto } from './dto/create-checkout-session.dto';
 import { LegalService } from '../../legal/legal.service';
+import { ReservationService } from './reservation.service';
 
 const CHECKOUT_SESSION_TTL_MINUTES = 30;
 
@@ -13,9 +14,12 @@ interface CheckoutSessionContext {
 
 @Injectable()
 export class CheckoutService {
+    private readonly logger = new Logger(CheckoutService.name);
+
     constructor(
         private prisma: PrismaService,
         private legalService: LegalService,
+        private reservationService: ReservationService,
     ) { }
 
     async createCheckoutSession(data: CreateCheckoutSessionDto, context?: CheckoutSessionContext) {
@@ -32,13 +36,23 @@ export class CheckoutService {
         }
 
         if (event.endDate && new Date() > event.endDate) {
-            throw new BadRequestException('Event has ended');
+            throw new BadRequestException('Evento finalizado');
         }
 
+        // Calcular total de tickets solicitados
         const ticketsByTemplate = new Map<string, number>();
+        let totalTicketsRequested = 0;
         for (const ticket of data.tickets) {
             const current = ticketsByTemplate.get(ticket.templateId) ?? 0;
             ticketsByTemplate.set(ticket.templateId, current + ticket.quantity);
+            totalTicketsRequested += ticket.quantity;
+        }
+
+        // MVP: Validar máximo de tickets por compra
+        if (totalTicketsRequested > event.maxTicketsPerPurchase) {
+            throw new BadRequestException(
+                `Máximo ${event.maxTicketsPerPurchase} tickets por compra. Solicitaste ${totalTicketsRequested}.`
+            );
         }
 
         const templateIds = [...ticketsByTemplate.keys()];
@@ -49,7 +63,25 @@ export class CheckoutService {
         const templateMap = new Map(templates.map((template) => [template.id, template]));
 
         if (templates.length !== templateIds.length) {
-            throw new NotFoundException('One or more ticket templates not found');
+            throw new NotFoundException('Una o más plantillas de tickets no encontradas');
+        }
+
+        // MVP: Validar disponibilidad considerando reservas activas
+        for (const template of templates) {
+            const requestedQuantity = ticketsByTemplate.get(template.id) ?? 0;
+            const isAvailable = await this.reservationService.checkAvailability(
+                event.id,
+                template.id,
+                template.quantity,
+                template.sold,
+                requestedQuantity
+            );
+
+            if (!isAvailable) {
+                throw new BadRequestException(
+                    `No hay suficientes tickets disponibles para "${template.name}". Intenta con menos cantidad.`
+                );
+            }
         }
 
         let total = 0;
@@ -57,16 +89,13 @@ export class CheckoutService {
 
         for (const template of templates) {
             if (template.eventId !== data.eventId) {
-                throw new BadRequestException('Template does not belong to this event');
+                throw new BadRequestException('Plantilla no pertenece a este evento');
             }
 
             const requestedQuantity = ticketsByTemplate.get(template.id) ?? 0;
-            if (template.quantity < requestedQuantity) {
-                throw new BadRequestException('Not enough tickets available');
-            }
 
             if (currency && template.currency !== currency) {
-                throw new BadRequestException('Cannot mix templates from different currencies');
+                throw new BadRequestException('No se pueden mezclar monedas diferentes');
             }
 
             currency = currency ?? template.currency;
@@ -74,17 +103,26 @@ export class CheckoutService {
         }
 
         const expiresAt = new Date(Date.now() + CHECKOUT_SESSION_TTL_MINUTES * 60 * 1000);
+        const reservedUntil = new Date(Date.now() + 5 * 60 * 1000); // MVP: 5 min lock
 
         const session = await this.prisma.$transaction(async (tx) => {
+            // Double-check availability con locks
             const latestTemplates = await tx.ticketTemplate.findMany({
                 where: { id: { in: templateIds } },
-                select: { id: true, quantity: true },
+                select: { id: true, quantity: true, sold: true },
             });
 
             for (const template of latestTemplates) {
                 const requestedQuantity = ticketsByTemplate.get(template.id) ?? 0;
-                if (template.quantity < requestedQuantity) {
-                    throw new BadRequestException('Tickets sold out during processing');
+                const available = await this.reservationService.checkAvailability(
+                    event.id,
+                    template.id,
+                    template.quantity,
+                    template.sold,
+                    requestedQuantity
+                );
+                if (!available) {
+                    throw new BadRequestException('Tickets agotados durante el proceso');
                 }
             }
 
@@ -102,6 +140,7 @@ export class CheckoutService {
                 });
             }
 
+            // MVP: Crear order con IP, User-Agent y reservedUntil
             const order = await tx.order.create({
                 data: {
                     eventId: data.eventId,
@@ -111,6 +150,9 @@ export class CheckoutService {
                     currency: currency ?? 'MXN',
                     platformFeeAmount: 0,
                     organizerIncomeAmount: 0,
+                    ipAddress: context?.ip,
+                    userAgent: context?.userAgent,
+                    reservedUntil,
                 },
             });
 
@@ -152,14 +194,28 @@ export class CheckoutService {
                 },
             });
 
+            // MVP: Reservar tickets en Redis
+            for (const [templateId, quantity] of ticketsByTemplate.entries()) {
+                await this.reservationService.reserveTickets(
+                    event.id,
+                    templateId,
+                    quantity,
+                    order.id
+                );
+            }
+
+            this.logger.log(`Checkout creado: ${order.id}, reservado hasta ${reservedUntil.toISOString()}`);
+
             return {
                 response: {
                     orderId: order.id,
                     total: Number(order.total),
                     currency: order.currency,
                     expiresAt: expiresAt.toISOString(),
+                    reservedUntil: reservedUntil.toISOString(),
                 },
                 buyerId: buyer.id,
+                orderId: order.id,
             };
         });
 

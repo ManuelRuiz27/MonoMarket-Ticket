@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, Global } from '@nestjs/common';
 import { AuthModule } from './modules/auth/auth.module';
 import { OrganizerModule } from './modules/organizer/organizer.module';
 import { EventsModule } from './modules/events/events.module';
@@ -9,9 +9,16 @@ import { TemplatesModule } from './modules/templates/templates.module';
 import { DirectorModule } from './modules/director/director.module';
 import { LegalModule } from './modules/legal/legal.module';
 import { PrismaModule } from './modules/prisma/prisma.module';
+import { ConfigModule } from '@nestjs/config';
+import { EnvValidationService } from './config/env.validation';
 
+@Global()
 @Module({
     imports: [
+        ConfigModule.forRoot({
+            isGlobal: true,
+            envFilePath: '.env',
+        }),
         PrismaModule,
         AuthModule,
         OrganizerModule,
@@ -23,5 +30,8 @@ import { PrismaModule } from './modules/prisma/prisma.module';
         DirectorModule,
         LegalModule,
     ],
+    providers: [EnvValidationService],
+    exports: [EnvValidationService],
 })
 export class AppModule { }
+

@@ -1,4 +1,4 @@
-// This is your Prisma schema file
+// This is your Prisma schema file,
 // Learn more about it in the docs: https://pris.ly/d/prisma-schema
 
 generator client {
@@ -33,6 +33,7 @@ model Organizer {
   businessName String
   status       OrganizerStatus @default(ACTIVE)
   feePlanId    String?
+  complementaryTicketsUsed Int @default(0)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
@@ -62,14 +63,19 @@ model Event {
   currency    String  @default("MXN")
   isPublic    Boolean @default(true)
   
+  // Unlisted events (MVP)
+  isUnlisted  Boolean @default(false)
+  accessToken String? @unique
+  maxTicketsPerPurchase Int @default(5)
+  
   // Custom PDF Template
-  pdfTemplatePath String?  // Path to uploaded PDF template
-  qrCodeX         Int?     // X coordinate for QR code (PDF points)
-  qrCodeY         Int?     // Y coordinate for QR code (PDF points)
-  qrCodeWidth     Int?     // QR code size (PDF points)
+  pdfTemplatePath String?
+  qrCodeX         Int?
+  qrCodeY         Int?
+  qrCodeWidth     Int?
   
   // Attendance tracking
-  attendanceCount Int      @default(0) // Number of tickets checked in
+  attendanceCount Int      @default(0)
   
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -82,9 +88,6 @@ model Event {
   @@map("events")
 }
 
-// After modifying the schema run the migration:
-// npx prisma migrate dev --name add_event_fields_for_organizer
-
 model TicketTemplate {
   id          String   @id @default(uuid())
   organizerId String
@@ -95,6 +98,7 @@ model TicketTemplate {
   currency    String   @default("MXN")
   quantity    Int
   sold        Int      @default(0)
+  isComplimentary Boolean @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
@@ -128,6 +132,14 @@ model Order {
   currency  String      @default("MXN")
   platformFeeAmount    Decimal @default(0) @db.Decimal(10, 2)
   organizerIncomeAmount Decimal @default(0) @db.Decimal(10, 2)
+  
+  // Legal compliance (MVP)
+  ipAddress  String?
+  userAgent  String?  @db.Text
+  
+  // Checkout reservation (MVP - 5 min lock)
+  reservedUntil DateTime?
+  
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
   paidAt    DateTime?
@@ -167,7 +179,7 @@ model Ticket {
   status     TicketStatus @default(VALID)
   usedAt     DateTime?
   createdAt  DateTime     @default(now())
-  updatedAt  DateTime     @updatedAt
+  updatedAt  DateTime @updatedAt
 
   order    Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
   template TicketTemplate @relation(fields: [templateId], references: [id])
@@ -179,7 +191,7 @@ model EventStaff {
   id        String   @id @default(uuid())
   eventId   String
   userId    String
-  role      String   @default("scanner") // scanner, coordinator, etc
+  role      String   @default("scanner")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -197,6 +209,7 @@ model FeePlan {
   platformFeePercent        Decimal  @db.Decimal(5, 2)
   platformFeeFixed          Decimal  @default(0) @db.Decimal(10, 2)
   paymentGatewayFeePercent  Decimal  @default(0) @db.Decimal(5, 2)
+  complementaryFee          Decimal  @default(0) @db.Decimal(10, 2)
   isDefault                 Boolean  @default(false)
   createdAt                 DateTime @default(now())
   updatedAt                 DateTime @updatedAt
@@ -252,6 +265,19 @@ model OrderItem {
   @@map("order_items")
 }
 
+model WebhookLog {
+  id        String   @id @default(uuid())
+  gateway   String
+  event     String
+  payload   Json
+  signature String?
+  verified  Boolean  @default(false)
+  orderId   String?
+  createdAt DateTime @default(now())
+
+  @@map("webhook_logs")
+}
+
 // Enums
 enum Role {
   ORGANIZER
@@ -283,7 +309,7 @@ enum OrderStatus {
 }
 
 enum PaymentGateway {
-  CONEKTA
+  OPENPAY
   MERCADOPAGO
 }
 

@@ -28,7 +28,7 @@ export class PaymentTasksService {
                 },
             );
             this.logger.log(`Order ${orderId} enqueued for fulfillment`);
-        } catch (error) {
+        } catch (error: any) {
             const err = error as Error;
             this.logger.error(`Failed to enqueue fulfillment for order ${orderId}: ${err.message}`, err.stack);
             throw err;

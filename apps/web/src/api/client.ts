@@ -31,6 +31,7 @@ export type OrganizerEventInput = ApiSchemas['EventInput'] & {
     price?: number;
     currency?: string;
     isPublic?: boolean;
+    isUnlisted?: boolean;
     status?: string;
 };
 
@@ -300,6 +301,54 @@ class ApiClient {
         }
 
         return response.json();
+    }
+
+    // Organizer - Dashboard & Metrics
+    public async getOrganizerSummary() {
+        return this.request<{
+            organizerId: string;
+            businessName: string;
+            status: string;
+            stats: {
+                totalEvents: number;
+                activeEvents: number;
+                totalOrders: number;
+                totalRevenue: number;
+            };
+            cortesias: {
+                used: number;
+                totalAllowed: number;
+                remaining: number;
+            };
+        }>('/organizer/dashboard', {}, { organizerScope: true });
+    }
+
+    public async getEventMetrics(eventId: string) {
+        return this.request<{
+            event: any;
+            sales: any;
+            attendance: any;
+            templates: any[];
+        }>(`/organizer/events/${eventId}/metrics`, {}, { organizerScope: true });
+    }
+
+    public async getCortesiasStats() {
+        return this.request<{
+            used: number;
+            totalAllowed: number;
+            remaining: number;
+        }>('/organizer/cortesias/stats', {}, { organizerScope: true });
+    }
+
+    public async generateCortesias(eventId: string, data: { quantity: number; buyerName: string; buyerEmail: string; buyerPhone?: string }) {
+        return this.request(
+            `/organizer/events/${eventId}/cortesias`,
+            {
+                method: 'POST',
+                body: JSON.stringify(data),
+            },
+            { organizerScope: true }
+        );
     }
 
     // Director - metrics

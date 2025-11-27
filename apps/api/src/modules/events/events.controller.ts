@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Post, Body, UploadedFile, UseInterceptors, BadRequestException, UseGuards, Req } from '@nestjs/common';
+import { Controller, Get, Param, Post, Body, Query, UploadedFile, UseInterceptors, BadRequestException, UseGuards, Req } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import * as path from 'path';
@@ -7,8 +7,9 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { v4 as uuidv4 } from 'uuid';
+import { EventFiltersDto } from './dto/event-filters.dto';
 
-/** Public events controller */
+/** Controlador público de eventos */
 @Controller('public/events')
 export class EventsController {
     constructor(private readonly eventsService: EventsService) { }
@@ -18,13 +19,31 @@ export class EventsController {
         return this.eventsService.findAllPublic();
     }
 
+    /**
+     * Buscar eventos con filtros (MVP Épica 1)
+     * GET /public/events/search?category=musica&city=guadalajara
+     */
+    @Get('search')
+    async searchEvents(@Query() filters: EventFiltersDto) {
+        return this.eventsService.findPublicWithFilters(filters);
+    }
+
+    /**
+     * Acceder a evento unlisted por token (Modelo B)
+     * GET /public/events/unlisted/:token
+     */
+    @Get('unlisted/:token')
+    async getUnlistedEvent(@Param('token') token: string) {
+        return this.eventsService.findByAccessToken(token);
+    }
+
     @Get(':id')
     async findOne(@Param('id') id: string) {
         return this.eventsService.findById(id);
     }
 }
 
-/** Organizer events controller */
+/** Controlador de eventos del organizador */
 @Controller('organizer/events')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('ORGANIZER', 'STAFF')
@@ -75,5 +94,29 @@ export class OrganizerEventsController {
             qrCodeWidth: Number(dto.qrCodeWidth),
         };
         return this.eventsService.setPdfTemplate(eventId, file.path, parsedDto);
+    }
+
+    /**
+     * Generar token de acceso para evento unlisted (Modelo B)
+     * POST /organizer/events/:id/access-token
+     */
+    @Post(':id/access-token')
+    async generateAccessToken(
+        @Param('id') eventId: string,
+        @Req() req: any
+    ) {
+        const event = await this.eventsService.findById(eventId);
+        if (!event || event.organizer.userId !== req.user.userId) {
+            throw new BadRequestException('No autorizado');
+        }
+
+        const token = await this.eventsService.generateAccessToken(eventId);
+        const baseUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+
+        return {
+            token,
+            url: `${baseUrl}/events/unlisted/${token}`,
+            message: 'Token generado. Comparte esta URL para acceso directo al evento.'
+        };
     }
 }

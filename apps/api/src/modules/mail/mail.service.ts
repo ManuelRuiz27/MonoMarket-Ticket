@@ -57,7 +57,7 @@ export class MailService {
                     sentAt: new Date(),
                 },
             });
-        } catch (error) {
+        } catch (error: any) {
             this.logger.warn(`Email log persistence failed: ${(error as Error).message}`);
         }
     }

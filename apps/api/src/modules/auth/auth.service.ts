@@ -1,14 +1,17 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, Inject } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import * as bcrypt from 'bcrypt';
 import { logger } from '@monomarket/config';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Cache } from 'cache-manager';
 
 @Injectable()
 export class AuthService {
     constructor(
         private prisma: PrismaService,
         private jwtService: JwtService,
+        @Inject(CACHE_MANAGER) private cacheManager: Cache,
     ) { }
 
     async register(data: {
@@ -90,5 +93,43 @@ export class AuthService {
         const { password, ...sanitized } = user;
         void password;
         return sanitized;
+    }
+
+    /**
+     * Add token to blacklist (logout functionality)
+     * Tokens are stored in Redis with TTL matching JWT expiration
+     */
+    async blacklistToken(token: string): Promise<void> {
+        try {
+            const decoded = this.jwtService.verify(token);
+            const expiresIn = decoded.exp - Math.floor(Date.now() / 1000);
+
+            if (expiresIn > 0) {
+                // Store in cache with TTL matching token expiration
+                await this.cacheManager.set(
+                    `blacklist:${token}`,
+                    'true',
+                    expiresIn * 1000, // Convert to milliseconds
+                );
+                logger.info(`Token blacklisted for user ${decoded.sub}`);
+            }
+        } catch (error) {
+            const message = error instanceof Error ? error.message : 'Unknown error';
+            logger.warn('Failed to blacklist token:', message);
+        }
+    }
+
+    /**
+     * Check if token is blacklisted
+     * Called by JWT strategy on every authenticated request
+     */
+    async isTokenBlacklisted(token: string): Promise<boolean> {
+        try {
+            const blacklisted = await this.cacheManager.get(`blacklist:${token}`);
+            return !!blacklisted;
+        } catch (error) {
+            logger.error('Error checking token blacklist:', error);
+            return false; // Fail open to avoid blocking users due to Redis issues
+        }
     }
 }

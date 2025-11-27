@@ -1,7 +1,8 @@
-import { Controller, Post, Body } from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Req } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
 
 @Controller('auth')
 export class AuthController {
@@ -15,5 +16,15 @@ export class AuthController {
     @Post('login')
     async login(@Body() loginDto: LoginDto) {
         return this.authService.login(loginDto.email, loginDto.password);
+    }
+
+    @Post('logout')
+    @UseGuards(JwtAuthGuard)
+    async logout(@Req() req: any) {
+        const token = req.headers.authorization?.replace('Bearer ', '');
+        if (token) {
+            await this.authService.blacklistToken(token);
+        }
+        return { message: 'Logged out successfully' };
     }
 }

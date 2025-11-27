@@ -11,6 +11,7 @@ const MOCK_BUYER = { id: 'buyer-1', email: 'buyer@test.com', name: 'Test Buyer',
 describe('CheckoutService', () => {
     let prisma: DeepMockProxy<PrismaService>;
     let legalService: Pick<LegalService, 'logOrderContext'>;
+    let reservationService: any;
     let service: CheckoutService;
 
     beforeEach(() => {
@@ -18,8 +19,15 @@ describe('CheckoutService', () => {
         legalService = {
             logOrderContext: jest.fn(),
         };
+        reservationService = {
+            lockTickets: jest.fn().mockResolvedValue(true),
+            releaseTickets: jest.fn(),
+            checkAvailability: jest.fn().mockResolvedValue(true),
+            validateAvailability: jest.fn().mockResolvedValue(undefined),
+            reserveTickets: jest.fn().mockResolvedValue(true),
+        };
         prisma.$transaction.mockImplementation(async (callback) => callback(prisma as unknown as PrismaClient));
-        service = new CheckoutService(prisma, legalService as LegalService);
+        service = new CheckoutService(prisma, legalService as LegalService, reservationService);
     });
 
     it('creates a checkout session computing totals', async () => {
@@ -85,6 +93,7 @@ describe('CheckoutService', () => {
             total: 250,
             currency: 'MXN',
             expiresAt: new Date(now.getTime() + 30 * 60 * 1000).toISOString(),
+            reservedUntil: expect.any(String),
         });
         expect(prisma.order.create).toHaveBeenCalledWith(
             expect.objectContaining({

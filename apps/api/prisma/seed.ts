@@ -4,11 +4,12 @@ import * as bcrypt from 'bcrypt';
 const prisma = new PrismaClient();
 
 async function main() {
-    console.log('🌱 Iniciando seed de la base de datos...');
+    console.log('🌱 Starting database seeding...');
 
-    // Limpiar datos existentes (opcional - cuidado en producción)
-    console.log('🧹 Limpiando datos existentes...');
+    // Clear existing data
+    console.log('🗑️  Clearing existing data...');
     await prisma.ticket.deleteMany();
+    await prisma.orderItem.deleteMany();
     await prisma.payment.deleteMany();
     await prisma.order.deleteMany();
     await prisma.ticketTemplate.deleteMany();
@@ -16,463 +17,390 @@ async function main() {
     await prisma.organizer.deleteMany();
     await prisma.user.deleteMany();
     await prisma.feePlan.deleteMany();
-    await prisma.buyer.deleteMany();
 
-    // Crear plan de fees por defecto
-    console.log('💰 Creando plan de fees...');
-    const defaultFeePlan = await prisma.feePlan.create({
+    // 1. Create Fee Plans
+    console.log('💰 Creating fee plans...');
+    const basicPlan = await prisma.feePlan.create({
         data: {
-            name: 'Plan Estándar',
-            description: 'Plan de comisiones estándar para organizadores',
-            platformFeePercent: 5.0,
-            platformFeeFixed: 10.0,
-            paymentGatewayFeePercent: 3.6,
+            name: 'Plan Básico',
+            description: 'Plan estándar para nuevos organizadores',
+            platformFeePercent: 8.5,
+            platformFeeFixed: 0,
+            paymentGatewayFeePercent: 0,
+            complementaryFee: 50,
             isDefault: true,
         },
     });
 
-    // Crear usuarios organizadores
-    console.log('👥 Creando usuarios...');
-    const hashedPassword = await bcrypt.hash('password123', 10);
-
-    const user1 = await prisma.user.create({
+    const premiumPlan = await prisma.feePlan.create({
         data: {
-            email: 'eventos@musiclive.mx',
-            password: hashedPassword,
-            name: 'Carlos Méndez',
-            role: 'ORGANIZER',
-            organizer: {
-                create: {
-                    businessName: 'Music Live México',
-                    status: 'ACTIVE',
-                    feePlanId: defaultFeePlan.id,
-                },
-            },
-        },
-        include: {
-            organizer: true,
+            name: 'Plan Premium',
+            description: 'Plan con comisiones reducidas',
+            platformFeePercent: 5.0,
+            platformFeeFixed: 0,
+            paymentGatewayFeePercent: 0,
+            complementaryFee: 0,
+            isDefault: false,
         },
     });
 
-    const user2 = await prisma.user.create({
-        data: {
-            email: 'info@eventosgdl.com',
-            password: hashedPassword,
-            name: 'Ana Rodríguez',
-            role: 'ORGANIZER',
-            organizer: {
-                create: {
-                    businessName: 'Eventos Guadalajara',
-                    status: 'ACTIVE',
-                    feePlanId: defaultFeePlan.id,
-                },
-            },
-        },
-        include: {
-            organizer: true,
-        },
-    });
+    // 2. Create Users
+    console.log('👥 Creating users...');
+    const passwordHash = await bcrypt.hash('password123', 10);
 
-    const user3 = await prisma.user.create({
+    const directorUser = await prisma.user.create({
         data: {
-            email: 'admin@monomarket.mx',
-            password: hashedPassword,
-            name: 'Director General',
+            email: 'director@monomarket.com',
+            password: passwordHash,
             role: 'DIRECTOR',
+            name: 'Admin MonoMarket',
         },
     });
 
-    // Crear eventos
-    console.log('🎉 Creando eventos...');
+    const organizerUser1 = await prisma.user.create({
+        data: {
+            email: 'organizador@eventos.com',
+            password: passwordHash,
+            role: 'ORGANIZER',
+            name: 'Juan Pérez',
+        },
+    });
 
-    // Helper para crear fechas futuras
-    const futureDate = (daysFromNow: number, hour: number = 18, minute: number = 0) => {
-        const date = new Date();
-        date.setDate(date.getDate() + daysFromNow);
-        date.setHours(hour, minute, 0, 0);
-        return date;
-    };
+    const organizerUser2 = await prisma.user.create({
+        data: {
+            email: 'maria@conciertos.com',
+            password: passwordHash,
+            role: 'ORGANIZER',
+            name: 'María García',
+        },
+    });
+
+    const staffUser = await prisma.user.create({
+        data: {
+            email: 'staff@eventos.com',
+            password: passwordHash,
+            role: 'STAFF',
+            name: 'Carlos López',
+        },
+    });
+
+    // 3. Create Organizers
+    console.log('🎭 Creating organizers...');
+    const organizer1 = await prisma.organizer.create({
+        data: {
+            userId: organizerUser1.id,
+            businessName: 'Eventos Premium MX',
+            status: 'ACTIVE',
+            feePlanId: basicPlan.id,
+        },
+    });
+
+    const organizer2 = await prisma.organizer.create({
+        data: {
+            userId: organizerUser2.id,
+            businessName: 'Conciertos Elite',
+            status: 'ACTIVE',
+            feePlanId: premiumPlan.id,
+        },
+    });
+
+    // 4. Create Events
+    console.log('🎫 Creating events...');
+    const now = new Date();
+    const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+    const nextMonth = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
 
     const event1 = await prisma.event.create({
         data: {
-            organizerId: user1.organizer!.id,
-            title: 'Festival de Rock 2024',
-            description:
-                'El mejor festival de rock del año con bandas nacionales e internacionales. Una experiencia inolvidable con 3 escenarios y más de 20 artistas en vivo.',
-            category: 'Música',
-            venue: 'Auditorio Telmex',
-            address: 'Av. Mariano Otero 1499',
-            city: 'Guadalajara, Jalisco',
-            startDate: futureDate(30, 18, 0),  // 30 días desde hoy a las 6pm
-            endDate: futureDate(31, 2, 0),     // Termina a las 2am del día siguiente
-            coverImage: 'https://images.unsplash.com/photo-1501612780327-45045538702b',
+            title: 'Concierto Rock en Vivo - The Legends',
+            description: 'Una noche inolvidable con las mejores bandas de rock de México',
+            category: 'MUSIC',
+            startDate: nextWeek,
+            endDate: new Date(nextWeek.getTime() + 4 * 60 * 60 * 1000),
+            venue: 'Foro Sol',
+            address: 'Viaducto Río de la Piedad s/n, Ciudad de México',
+            city: 'Ciudad de México',
+            capacity: 500,
+            price: 500,
+            maxTicketsPerPurchase: 10,
             status: 'PUBLISHED',
+            isPublic: true,
+            isUnlisted: false,
+            organizerId: organizer1.id,
+            coverImage: 'https://images.unsplash.com/photo-1459749411175-04bf5292ceea',
         },
     });
 
     const event2 = await prisma.event.create({
         data: {
-            organizerId: user1.organizer!.id,
-            title: 'Concierto Electrónico - Tiësto',
-            description:
-                'Una noche épica con el legendario DJ Tiësto. Música electrónica de primer nivel con producción visual espectacular.',
-            category: 'Música',
-            venue: 'Arena Monterrey',
-            address: 'Av. Francisco I. Madero 2500',
-            city: 'Monterrey, Nuevo León',
-            startDate: futureDate(45, 21, 0),  // 45 días desde hoy a las 9pm
-            endDate: futureDate(46, 4, 0),     // Termina a las 4am
-            coverImage: 'https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3',
+            title: 'Festival de Jazz 2024',
+            description: 'El mejor jazz en vivo con artistas internacionales',
+            category: 'MUSIC',
+            startDate: nextMonth,
+            endDate: new Date(nextMonth.getTime() + 6 * 60 * 60 * 1000),
+            venue: 'Teatro Metropolitan',
+            address: 'Av. Independencia 90, Centro, CDMX',
+            city: 'Ciudad de México',
+            capacity: 300,
+            price: 800,
+            maxTicketsPerPurchase: 6,
             status: 'PUBLISHED',
+            isPublic: true,
+            isUnlisted: false,
+            organizerId: organizer2.id,
+            coverImage: 'https://images.unsplash.com/photo-1415201364774-f6f0bb35f28f',
         },
     });
 
     const event3 = await prisma.event.create({
         data: {
-            organizerId: user1.organizer!.id,
-            title: 'Expo Emprendedores 2024',
-            description:
-                'La feria de emprendimiento más grande de México. Networking, conferencias magistrales y exposición de productos innovadores.',
-            category: 'Negocios',
-            venue: 'Expo Guadalajara',
-            address: 'Av. Mariano Otero 1499',
-            city: 'Guadalajara, Jalisco',
-            startDate: futureDate(60, 9, 0),   // 60 días desde hoy a las 9am
-            endDate: futureDate(62, 20, 0),    // 3 días del evento
-            coverImage: 'https://images.unsplash.com/photo-1540575467063-178a50c2df87',
-            status: 'PUBLISHED',
-        },
-    });
-
-    const event4 = await prisma.event.create({
-        data: {
-            organizerId: user1.organizer!.id,
-            title: 'Stand Up Comedy - Franco Escamilla',
-            description:
-                'Una noche llena de risas con Franco Escamilla. El comediante mexicano más popular del momento presenta su nuevo show.',
-            category: 'Comedia',
-            venue: 'Teatro Diana',
-            address: 'Av. 16 de Septiembre 710',
-            city: 'Guadalajara, Jalisco',
-            startDate: futureDate(75, 20, 0),  // 75 días desde hoy a las 8pm
-            endDate: futureDate(75, 22, 30),   // Termina a las 10:30pm
-            coverImage: 'https://images.unsplash.com/photo-1585699324551-f6c309eedeca',
-            status: 'PUBLISHED',
-        },
-    });
-
-    const event5 = await prisma.event.create({
-        data: {
-            organizerId: user1.organizer!.id,
-            title: 'Maratón CDMX 2024',
-            description:
-                'Participa en el maratón más importante de la Ciudad de México. 42km recorriendo los lugares más emblemáticos de la capital.',
-            category: 'Deportes',
-            venue: 'Zócalo de la CDMX',
-            address: 'Plaza de la Constitución S/N',
+            title: 'Evento Privado VIP - Cena de Gala',
+            description: 'Evento exclusivo por invitación',
+            category: 'OTHER',
+            startDate: new Date(nextWeek.getTime() + 3 * 24 * 60 * 60 * 1000),
+            endDate: new Date(nextWeek.getTime() + 3 * 24 * 60 * 60 * 1000 + 3 * 60 * 60 * 1000),
+            venue: 'Hotel St. Regis',
+            address: 'Paseo de la Reforma 439, CDMX',
             city: 'Ciudad de México',
-            startDate: futureDate(90, 7, 0),   // 90 días desde hoy a las 7am
-            endDate: futureDate(90, 14, 0),    // Termina a las 2pm
-            coverImage: 'https://images.unsplash.com/photo-1513593771513-7b58b6c4af38',
+            capacity: 50,
+            price: 3000,
+            maxTicketsPerPurchase: 4,
             status: 'PUBLISHED',
+            isPublic: false,
+            isUnlisted: true,
+            accessToken: 'vip-gala-2024-exclusive',
+            organizerId: organizer1.id,
         },
     });
 
-    // Crear plantillas de tickets para los eventos
-    console.log('🎫 Creando plantillas de tickets...');
+    // 5. Create Ticket Templates
+    console.log('🎟️ Creating ticket templates...');
 
-    // Evento 1 - Festival de Rock
-    await prisma.ticketTemplate.createMany({
-        data: [
-            {
-                organizerId: user1.organizer!.id,
-                eventId: event1.id,
-                name: 'Pase General',
-                description: 'Acceso a los 3 escenarios, zona de pie',
-                price: 850,
-                currency: 'MXN',
-                quantity: 5000,
-                sold: 1234,
-            },
-            {
-                organizerId: user1.organizer!.id,
-                eventId: event1.id,
-                name: 'VIP',
-                description: 'Zona VIP con asientos, barra libre y área exclusiva',
-                price: 2500,
-                currency: 'MXN',
-                quantity: 500,
-                sold: 342,
-            },
-            {
-                organizerId: user1.organizer!.id,
-                eventId: event1.id,
-                name: 'Platinum',
-                description: 'Acceso backstage, meet & greet con artistas, zona premium',
-                price: 5000,
-                currency: 'MXN',
-                quantity: 100,
-                sold: 67,
-            },
-        ],
-    });
-
-    // Evento 2 - Tiësto
-    await prisma.ticketTemplate.createMany({
-        data: [
-            {
-                organizerId: user1.organizer!.id,
-                eventId: event2.id,
-                name: 'General',
-                description: 'Acceso general a la arena',
-                price: 1200,
-                currency: 'MXN',
-                quantity: 8000,
-                sold: 5432,
-            },
-            {
-                organizerId: user1.organizer!.id,
-                eventId: event2.id,
-                name: 'VIP Front Stage',
-                description: 'Zona VIP frente al escenario, barra libre',
-                price: 3500,
-                currency: 'MXN',
-                quantity: 300,
-                sold: 287,
-            },
-        ],
-    });
-
-    // Evento 3 - Expo Emprendedores
-    await prisma.ticketTemplate.createMany({
-        data: [
-            {
-                organizerId: user2.organizer!.id,
-                eventId: event3.id,
-                name: 'Pase 1 Día',
-                description: 'Acceso por 1 día a todas las conferencias y expo',
-                price: 350,
-                currency: 'MXN',
-                quantity: 2000,
-                sold: 876,
-            },
-            {
-                organizerId: user2.organizer!.id,
-                eventId: event3.id,
-                name: 'Pase 3 Días',
-                description: 'Acceso completo durante los 3 días del evento',
-                price: 850,
-                currency: 'MXN',
-                quantity: 1000,
-                sold: 654,
-            },
-        ],
-    });
-
-    // Evento 4 - Franco Escamilla
-    await prisma.ticketTemplate.createMany({
-        data: [
-            {
-                organizerId: user2.organizer!.id,
-                eventId: event4.id,
-                name: 'Luneta',
-                description: 'Asientos en luneta, excelente vista',
-                price: 650,
-                currency: 'MXN',
-                quantity: 800,
-                sold: 765,
-            },
-            {
-                organizerId: user2.organizer!.id,
-                eventId: event4.id,
-                name: 'Palco',
-                description: 'Palco privado para 4 personas',
-                price: 3200,
-                currency: 'MXN',
-                quantity: 20,
-                sold: 18,
-            },
-        ],
-    });
-
-    // Evento 5 - Maratón
-    await prisma.ticketTemplate.createMany({
-        data: [
-            {
-                organizerId: user1.organizer!.id,
-                eventId: event5.id,
-                name: 'Inscripción Maratón 42K',
-                description: 'Inscripción completa con kit de corredor y medalla',
-                price: 550,
-                currency: 'MXN',
-                quantity: 15000,
-                sold: 8934,
-            },
-            {
-                organizerId: user1.organizer!.id,
-                eventId: event5.id,
-                name: 'Inscripción Medio Maratón 21K',
-                description: 'Media maratón con kit de corredor',
-                price: 400,
-                currency: 'MXN',
-                quantity: 10000,
-                sold: 7234,
-            },
-        ],
-    });
-
-    // Crear flujo de compra completo (Buyer -> Order -> Payment -> Tickets)
-    console.log('🛍️ Creando flujo de compra de ejemplo...');
-
-    // 1. Crear Comprador
-    const buyer = await prisma.buyer.create({
+    const template1General = await prisma.ticketTemplate.create({
         data: {
-            email: 'comprador@ejemplo.com',
-            name: 'Juan Pérez',
-            phone: '+525512345678',
-        },
-    });
-
-    // 2. Crear Orden para el Evento 1 (Festival de Rock)
-    // Buscamos el template de "Pase General" que creamos antes
-    const generalTicketTemplate = await prisma.ticketTemplate.findFirst({
-        where: {
+            organizerId: organizer1.id,
             eventId: event1.id,
-            name: 'Pase General',
+            name: 'General',
+            description: 'Acceso general al evento',
+            price: 500,
+            quantity: 400,
+            sold: 75,
         },
     });
 
-    if (generalTicketTemplate) {
-        const ticketQuantity = 2;
-        const totalAmount = Number(generalTicketTemplate.price) * ticketQuantity;
-
-        const order = await prisma.order.create({
-            data: {
-                eventId: event1.id,
-                buyerId: buyer.id,
-                status: 'PAID',
-                total: totalAmount,
-                currency: 'MXN',
-                paidAt: new Date(),
-            },
-        });
-
-        // 3. Crear Pago
-        await prisma.payment.create({
-            data: {
-                orderId: order.id,
-                gateway: 'MERCADOPAGO',
-                amount: totalAmount,
-                currency: 'MXN',
-                status: 'COMPLETED',
-                gatewayTransactionId: 'ord_2tUigJ8923412',
-                paymentMethod: 'card',
-            },
-        });
-
-        // 4. Generar Tickets
-        await prisma.ticket.createMany({
-            data: [
-                {
-                    orderId: order.id,
-                    templateId: generalTicketTemplate.id,
-                    qrCode: `TICKET-${order.id}-1`,
-                    status: 'VALID',
-                },
-                {
-                    orderId: order.id,
-                    templateId: generalTicketTemplate.id,
-                    qrCode: `TICKET-${order.id}-2`,
-                    status: 'VALID',
-                },
-            ],
-        });
-
-        // Actualizar contadores
-        await prisma.ticketTemplate.update({
-            where: { id: generalTicketTemplate.id },
-            data: {
-                sold: { increment: ticketQuantity },
-                quantity: { decrement: ticketQuantity },
-            },
-        });
-
-        console.log('✅ Compra de ejemplo creada exitosamente');
-    }
-
-    // Crear usuarios STAFF para el scanner
-    console.log('👨‍💼 Creando usuarios Staff...');
-
-    const staffUser1 = await prisma.user.create({
+    const template1VIP = await prisma.ticketTemplate.create({
         data: {
-            email: 'scanner1@staff.com',
-            password: hashedPassword,
-            name: 'Luis Scanner',
-            role: 'STAFF',
+            organizerId: organizer1.id,
+            eventId: event1.id,
+            name: 'VIP',
+            description: 'Acceso preferente + Meet & Greet',
+            price: 1500,
+            quantity: 100,
+            sold: 30,
         },
     });
 
-    const staffUser2 = await prisma.user.create({
+    const template2General = await prisma.ticketTemplate.create({
         data: {
-            email: 'scanner2@staff.com',
-            password: hashedPassword,
-            name: 'María Puerta',
-            role: 'STAFF',
+            organizerId: organizer2.id,
+            eventId: event2.id,
+            name: 'General',
+            description: 'Entrada general',
+            price: 800,
+            quantity: 250,
+            sold: 120,
         },
     });
 
-    // Asignar staff a eventos
-    await prisma.eventStaff.createMany({
+    const template3VIP = await prisma.ticketTemplate.create({
+        data: {
+            organizerId: organizer1.id,
+            eventId: event3.id,
+            name: 'VIP Exclusivo',
+            description: 'Acceso a cena de gala',
+            price: 3000,
+            quantity: 50,
+            sold: 15,
+        },
+    });
+
+    // 6. Create Sample Orders
+    console.log('📦 Creating sample orders...');
+
+    const buyer1 = await prisma.buyer.create({
+        data: {
+            email: 'cliente1@gmail.com',
+            name: 'Pedro Ramírez',
+            phone: '5544332211',
+        },
+    });
+
+    const buyer2 = await prisma.buyer.create({
+        data: {
+            email: 'ana.lopez@hotmail.com',
+            name: 'Ana López',
+            phone: '5599887766',
+        },
+    });
+
+    // Orden 1: PAID
+    const order1 = await prisma.order.create({
+        data: {
+            eventId: event1.id,
+            buyerId: buyer1.id,
+            total: 1000,
+            status: 'PAID',
+            platformFeeAmount: 85,
+            organizerIncomeAmount: 915,
+            ipAddress: '192.168.1.100',
+            userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
+            paidAt: new Date(),
+        },
+    });
+
+    await prisma.orderItem.create({
+        data: {
+            orderId: order1.id,
+            templateId: template1General.id,
+            quantity: 2,
+            unitPrice: 500,
+        },
+    });
+
+    await prisma.payment.create({
+        data: {
+            orderId: order1.id,
+            gateway: 'OPENPAY',
+            gatewayTransactionId: 'op_tx_123456',
+            status: 'COMPLETED',
+            amount: 1000,
+        },
+    });
+
+    // Crear tickets para orden pagada
+    await prisma.ticket.createMany({
         data: [
             {
-                eventId: event1.id,  // Festival de Rock
-                userId: staffUser1.id,
-                role: 'scanner',
+                orderId: order1.id,
+                templateId: template1General.id,
+                qrCode: 'qr-ticket-1-' + Math.random().toString(36).substring(7),
+                status: 'VALID',
             },
             {
-                eventId: event2.id,  // Tiësto
-                userId: staffUser1.id,
-                role: 'scanner',
-            },
-            {
-                eventId: event1.id,  // Festival de Rock
-                userId: staffUser2.id,
-                role: 'scanner',
+                orderId: order1.id,
+                templateId: template1General.id,
+                qrCode: 'qr-ticket-2-' + Math.random().toString(36).substring(7),
+                status: 'VALID',
             },
         ],
     });
 
-    console.log('✅ Seed completado exitosamente!');
-    console.log('\n📊 Resumen:');
-    console.log(`  - 3 usuarios creados (2 organizadores, 1 director)`);
-    console.log(`  - 2 usuarios STAFF creados`);
-    console.log(`  - 5 eventos creados`);
-    console.log(`  - 11 plantillas de tickets creadas`);
-    console.log(`  - 1 plan de fees creado`);
-    console.log(`  - 1 flujo de compra completo creado (Buyer, Order, Payment, 2 Tickets)`);
-    console.log(`  - 3 asignaciones de staff a eventos`);
-    console.log('\n🔐 Credenciales de prueba:');
-    console.log('  Organizador 1:');
-    console.log('    Email: eventos@musiclive.mx');
-    console.log('    Password: password123');
-    console.log('  Organizador 2:');
-    console.log('    Email: info@eventosgdl.com');
-    console.log('    Password: password123');
-    console.log('  Director:');
-    console.log('    Email: admin@monomarket.mx');
-    console.log('    Password: password123');
-    console.log('  \n🎫 STAFF SCANNER (Recomendado para el scanner):');
-    console.log('  Staff 1 (acceso a Festival Rock + Tiësto):');
-    console.log('    Email: scanner1@staff.com');
-    console.log('    Password: password123');
-    console.log('  Staff 2 (acceso a Festival Rock):');
-    console.log('    Email: scanner2@staff.com');
-    console.log('    Password: password123');
+    // Orden 2: PAID con ticket usado
+    const order2 = await prisma.order.create({
+        data: {
+            eventId: event1.id,
+            buyerId: buyer2.id,
+            total: 3000,
+            status: 'PAID',
+            platformFeeAmount: 150,
+            organizerIncomeAmount: 2850,
+            ipAddress: '192.168.1.101',
+            userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)',
+            paidAt: new Date(),
+        },
+    });
+
+    await prisma.orderItem.create({
+        data: {
+            orderId: order2.id,
+            templateId: template1VIP.id,
+            quantity: 2,
+            unitPrice: 1500,
+        },
+    });
+
+    await prisma.payment.create({
+        data: {
+            orderId: order2.id,
+            gateway: 'OPENPAY',
+            gatewayTransactionId: 'op_tx_789012',
+            status: 'COMPLETED',
+            amount: 3000,
+        },
+    });
+
+    await prisma.ticket.createMany({
+        data: [
+            {
+                orderId: order2.id,
+                templateId: template1VIP.id,
+                qrCode: 'qr-ticket-3-' + Math.random().toString(36).substring(7),
+                status: 'VALID',
+            },
+            {
+                orderId: order2.id,
+                templateId: template1VIP.id,
+                qrCode: 'qr-ticket-4-' + Math.random().toString(36).substring(7),
+                status: 'USED',
+                usedAt: new Date(),
+            },
+        ],
+    });
+
+    // 7. Create Email Logs
+    console.log('📧 Creating email logs...');
+    await prisma.emailLog.createMany({
+        data: [
+            {
+                orderId: order1.id,
+                to: buyer1.email,
+                subject: `Tus tickets para ${event1.title}`,
+                status: 'SENT',
+                sentAt: new Date(),
+            },
+            {
+                orderId: order2.id,
+                to: buyer2.email,
+                subject: `Tus tickets para ${event1.title}`,
+                status: 'SENT',
+                sentAt: new Date(),
+            },
+        ],
+    });
+
+    console.log('✅ Database seeding completed successfully!');
+    console.log('\n📝 Test Credentials:');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('Director:');
+    console.log('  Email: director@monomarket.com');
+    console.log('  Password: password123');
+    console.log('\nOrganizador 1:');
+    console.log('  Email: organizador@eventos.com');
+    console.log('  Password: password123');
+    console.log('  Business: Eventos Premium MX');
+    console.log('\nOrganizador 2:');
+    console.log('  Email: maria@conciertos.com');
+    console.log('  Password: password123');
+    console.log('  Business: Conciertos Elite');
+    console.log('\nStaff:');
+    console.log('  Email: staff@eventos.com');
+    console.log('  Password: password123');
+    console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+    console.log('\n📊 Data Summary:');
+    console.log(`  - Users: 4 (1 Director, 2 Organizers, 1 Staff)`);
+    console.log(`  - Organizers: 2`);
+    console.log(`  - Events: 3 (2 public, 1 unlisted)`);
+    console.log(`  - Ticket Templates: 4`);
+    console.log(`  - Orders: 2 (both paid)`);
+    console.log(`  - Tickets: 4 (3 valid, 1 used)`);
+    console.log(`  - Fee Plans: 2`);
+    console.log(`\n🔗 Unlisted Event URL:`);
+    console.log(`  ${event3.title}: /public/events/unlisted/${event3.accessToken}`);
 }
 
 main()
     .catch((e) => {
-        console.error('❌ Error durante el seed:', e);
+        console.error('❌ Error during seeding:', e);
         process.exit(1);
     })
     .finally(async () => {
