@@ -231,4 +231,32 @@ export class CheckoutService {
 
         return session.response;
     }
+
+    async getCheckoutOrderSummary(orderId: string) {
+        const order = await this.prisma.order.findUnique({
+            where: { id: orderId },
+            include: {
+                buyer: true,
+            },
+        });
+
+        if (!order) {
+            throw new NotFoundException('Order not found');
+        }
+
+        if (order.status !== 'PENDING') {
+            throw new BadRequestException('Order is not pending payment');
+        }
+
+        return {
+            orderId: order.id,
+            total: Number(order.total),
+            currency: order.currency,
+            buyer: {
+                name: order.buyer.name ?? undefined,
+                email: order.buyer.email,
+                phone: order.buyer.phone ?? undefined,
+            },
+        };
+    }
 }

@@ -6,6 +6,7 @@ import PaymentMethods, { PAYMENT_METHODS } from '../../components/checkout/Payme
 import CountdownTimer from '../../components/checkout/CountdownTimer';
 import { apiClient } from '../../api/client';
 import { MercadoPagoButton } from '../../features/payments/components/MercadoPagoButton';
+import { MercadoPagoCard } from '../../components/payments/MercadoPagoCard';
 
 export function Checkout() {
     const { eventId } = useParams();
@@ -62,6 +63,14 @@ export function Checkout() {
         price: Number(price) || 0,
         quantity: Number(quantity) || 1,
     }]), [templateName, price, quantity]);
+
+    const formValues = getValues();
+    const payerData = {
+        firstName: formValues?.firstName,
+        lastName: formValues?.lastName,
+        email: formValues?.email,
+        phone: formValues?.phone,
+    };
 
     return (
         <div className="min-h-screen bg-gray-50 py-12">
@@ -175,15 +184,30 @@ export function Checkout() {
 
                                     <div className="mt-6 p-4 border rounded-md bg-gray-50">
                                         {selectedPaymentMethod.id === 'mercadopago' && (
-                                            <MercadoPagoButton
-                                                orderId={checkoutSession.orderId}
-                                                title={`Orden ${checkoutSession.orderId}`}
-                                                description={eventTitle}
-                                                quantity={Number(quantity)}
-                                                unitPrice={Number(price)}
-                                                currency="MXN"
-                                                payerEmail={getValues('email')}
-                                            />
+                                            <div className="space-y-6">
+                                                <MercadoPagoButton
+                                                    orderId={checkoutSession.orderId}
+                                                    title={`Orden ${checkoutSession.orderId}`}
+                                                    description={eventTitle}
+                                                    quantity={Number(quantity)}
+                                                    unitPrice={Number(price)}
+                                                    currency="MXN"
+                                                    payerEmail={getValues('email')}
+                                                />
+
+                                                <div className="border-t border-gray-200 pt-4">
+                                                    <h4 className="mb-3 text-sm font-semibold text-gray-700">Pagar con tarjeta</h4>
+                                                    <MercadoPagoCard
+                                                        orderId={checkoutSession.orderId}
+                                                        user={{
+                                                            email: payerData.email || '',
+                                                            firstName: payerData.firstName,
+                                                            lastName: payerData.lastName,
+                                                            phone: payerData.phone,
+                                                        }}
+                                                    />
+                                                </div>
+                                            </div>
                                         )}
                                         {/* Openpay (card/SPEI/OXXO) quedó comentado para limitar el front a Mercado Pago. */}
                                     </div>

@@ -128,4 +128,35 @@ describe('CheckoutService', () => {
             }),
         ).rejects.toThrow(BadRequestException);
     });
+
+    it('returns summary for pending orders', async () => {
+        prisma.order.findUnique.mockResolvedValue({
+            id: 'order-1',
+            status: 'PENDING',
+            total: new Prisma.Decimal(180),
+            currency: 'MXN',
+            buyer: {
+                name: 'Buyer',
+                email: 'buyer@test.com',
+                phone: '5512345678',
+            },
+        } as any);
+
+        const summary = await service.getCheckoutOrderSummary('order-1');
+
+        expect(summary).toEqual({
+            orderId: 'order-1',
+            total: 180,
+            currency: 'MXN',
+            buyer: {
+                name: 'Buyer',
+                email: 'buyer@test.com',
+                phone: '5512345678',
+            },
+        });
+        expect(prisma.order.findUnique).toHaveBeenCalledWith({
+            where: { id: 'order-1' },
+            include: { buyer: true },
+        });
+    });
 });

@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Req } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Req } from '@nestjs/common';
 import { logger } from '@monomarket/config';
 import { CheckoutService } from './checkout.service';
 import { CreateCheckoutSessionDto } from './dto/create-checkout-session.dto';
@@ -13,6 +13,11 @@ export class CheckoutController {
         @Req() req: any,
     ) {
         return this.handleSessionCreation(createCheckoutSessionDto, req);
+    }
+
+    @Get('orders/:id')
+    async getOrderSummary(@Param('id') id: string) {
+        return this.checkoutService.getCheckoutOrderSummary(id);
     }
 
     // Legacy support while frontend finishes migration.

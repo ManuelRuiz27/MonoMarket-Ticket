@@ -4,14 +4,48 @@ export type WalletBrickController = {
     destroy: () => void;
 };
 
-type MercadoPagoInstance = {
-    bricks(): {
-        create: (
-            name: 'wallet',
-            containerId: string,
-            options: { initialization: { preferenceId: string } },
-        ) => Promise<WalletBrickController>;
+export type CardPaymentBrickController = {
+    destroy: () => void;
+};
+
+type CardPaymentOnSubmitEvent = {
+    formData: {
+        token: string;
+        payment_method_id?: string;
+        issuer_id?: string;
+        installments?: number;
+        payer?: {
+            identification?: {
+                type?: string;
+                number?: string;
+            };
+        };
     };
+};
+
+type MercadoPagoBricks = {
+    create(
+        name: 'wallet',
+        containerId: string,
+        options: { initialization: { preferenceId: string } },
+    ): Promise<WalletBrickController>;
+    create(
+        name: 'cardPayment',
+        containerId: string,
+        options: {
+            initialization: { amount: number };
+            callbacks: {
+                onReady?: () => void;
+                onError?: (error: unknown) => void;
+                onSubmit: (event: CardPaymentOnSubmitEvent) => Promise<void>;
+            };
+            customization?: Record<string, unknown>;
+        },
+    ): Promise<CardPaymentBrickController>;
+};
+
+type MercadoPagoInstance = {
+    bricks(): MercadoPagoBricks;
 };
 
 type MercadoPagoConstructor = new (publicKey: string, options?: { locale?: string }) => MercadoPagoInstance;

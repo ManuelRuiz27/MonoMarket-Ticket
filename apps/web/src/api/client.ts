@@ -11,12 +11,31 @@ type OpenpayChargeRequest = ApiSchemas['OpenpayChargeRequest'];
 type OpenpayChargeResponse = ApiSchemas['OpenpayChargeResponse'];
 type MercadoPagoPreferenceRequest = ApiSchemas['MercadoPagoPreferenceRequest'];
 type MercadoPagoPreferenceResponse = ApiSchemas['MercadoPagoPreferenceResponse'];
+type MercadoPagoPayerInput = {
+    email: string;
+    firstName?: string;
+    lastName?: string;
+    phone?: string;
+    identificationType?: string;
+    identificationNumber?: string;
+};
 
 export type CheckoutSessionResponse = {
     orderId: string;
     total: number;
     currency?: string;
     expiresAt: string;
+};
+
+export type CheckoutOrderSummary = {
+    orderId: string;
+    total: number;
+    currency: string;
+    buyer: {
+        name?: string | null;
+        email: string;
+        phone?: string | null;
+    };
 };
 
 export type PaymentResponse = {
@@ -172,6 +191,10 @@ class ApiClient {
         });
     }
 
+    public async getCheckoutOrder(orderId: string) {
+        return this.request<CheckoutOrderSummary>(`/checkout/orders/${orderId}`);
+    }
+
     public async payOrder(data: {
         orderId: string;
         provider: 'mercadopago';
@@ -182,6 +205,29 @@ class ApiClient {
         return this.request<PaymentResponse>('/payments/pay', {
             method: 'POST',
             body: JSON.stringify(data),
+        });
+    }
+
+    public async createMercadoPagoPayment(data: {
+        orderId: string;
+        token: string;
+        issuerId?: string;
+        paymentMethodId?: string;
+        installments?: number;
+        payer: MercadoPagoPayerInput;
+    }) {
+        return this.request<PaymentResponse>('/payments/pay', {
+            method: 'POST',
+            body: JSON.stringify({
+                orderId: data.orderId,
+                provider: 'mercadopago' as const,
+                method: 'card' as const,
+                token: data.token,
+                issuerId: data.issuerId,
+                paymentMethodId: data.paymentMethodId,
+                installments: data.installments,
+                payer: data.payer,
+            }),
         });
     }
 
