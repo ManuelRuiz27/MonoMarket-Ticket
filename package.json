@@ -4,6 +4,7 @@
   "private": true,
   "description": "MonoMarket Tickets - Event marketplace platform monorepo",
   "scripts": {
+    "start": "cd apps/api && npx prisma migrate deploy && node dist/main.js",
     "contracts:generate": "pnpm --filter @monomarket/contracts run generate",
     "contracts:build": "pnpm run contracts:generate && pnpm --filter @monomarket/contracts run build",
     "config:build": "pnpm --filter @monomarket/config run build",
@@ -39,6 +40,5 @@
   "engines": {
     "node": ">=20.0.0",
     "pnpm": ">=8.0.0"
-  },
-  "packageManager": "pnpm@8.15.3"
+  }
 }
