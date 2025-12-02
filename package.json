@@ -5,7 +5,7 @@
   "description": "MonoMarket Tickets - Event marketplace platform monorepo",
   "scripts": {
     "contracts:generate": "pnpm --filter @monomarket/contracts run generate",
-    "contracts:build": "pnpm --filter @monomarket/contracts run build",
+    "contracts:build": "pnpm run contracts:generate && pnpm --filter @monomarket/contracts run build",
     "config:build": "pnpm --filter @monomarket/config run build",
     "build:packages": "pnpm run contracts:build && pnpm run config:build",
     "dev": "pnpm run contracts:generate && pnpm run build:packages && concurrently \"pnpm run dev:api\" \"pnpm run dev:web\"",
