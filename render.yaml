@@ -10,6 +10,9 @@ services:
       corepack enable
       corepack prepare pnpm@latest --activate
       pnpm install --frozen-lockfile
+      cd ../../packages/contracts
+      pnpm run generate || echo "OpenAPI generation skipped"
+      cd ../../apps/api
       pnpm prisma:generate
       pnpm run build
     startCommand: |
