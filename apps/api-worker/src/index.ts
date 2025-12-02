@@ -318,12 +318,12 @@ export default {
         }
 
         // Events list endpoint
-        if (path === '/api/events' && request.method === 'GET') {
+        if (path === '/api/public/events' && request.method === 'GET') {
             return getEvents(env);
         }
 
         // Single event endpoint
-        const eventMatch = path.match(/^\/api\/events\/([a-zA-Z0-9-]+)$/);
+        const eventMatch = path.match(/^\/api\/public\/events\/([a-zA-Z0-9-]+)$/);
         if (eventMatch && request.method === 'GET') {
             const eventId = eventMatch[1];
             return getEventById(env, eventId);

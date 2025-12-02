@@ -1,0 +1,33 @@
+# Fly.io configuration for MonoMarket API
+app = "monomarket-api"
+primary_region = "dfw"  # Dallas - cambia a tu región preferida (gru, ord, etc.)
+
+[build]
+  # Build from monorepo root to access packages
+
+[deploy]
+  release_command = "echo 'Deployment starting...'"
+
+[env]
+  NODE_ENV = "production"
+  PORT = "3000"
+  LOG_LEVEL = "info"
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = "stop"  # Detiene la máquina cuando no hay tráfico (plan gratuito)
+  auto_start_machines = true   # Arranca automáticamente cuando llega una petición
+  min_machines_running = 0     # 0 para plan gratuito (se detiene cuando no se usa)
+  processes = ["app"]
+
+  [[http_service.checks]]
+    grace_period = "90s"
+    interval = "30s"
+    method = "GET"
+    timeout = "5s"
+    path = "/api/health"
+
+[[vm]]
+  size = "shared-cpu-1x"  # Plan gratuito
+  memory = "256mb"        # Memoria mínima para plan gratuito

@@ -1,6 +1,7 @@
 name = "monomarket-api"
 main = "src/index.ts"
 compatibility_date = "2025-11-30"
+compatibility_flags = ["nodejs_compat"]
 
 # D1 Database
 [[d1_databases]]
