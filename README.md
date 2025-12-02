@@ -13,7 +13,7 @@ MonoMarket Tickets es un monorepo full-stack (NestJS + React) que sigue la filos
 ## Requisitos
 
 - Node.js >= 20
-- pnpm >= 8
+- pnpm >= 9
 - PostgreSQL 15 (local o administrado) accesible via `DATABASE_URL`
 
 ## Instalación rápida

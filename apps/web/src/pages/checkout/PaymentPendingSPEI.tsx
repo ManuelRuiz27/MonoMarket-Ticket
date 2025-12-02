@@ -146,7 +146,9 @@ export function PaymentPendingSPEI() {
                                 </li>
                                 <li className="flex">
                                     <span className="flex-shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold">2</span>
-                                    <p className="ml-4 text-gray-700">Selecciona "Transferencia SPEI" o "Pago a terceros"</p>
+                                    <p className="ml-4 text-gray-700">
+                                        Selecciona &quot;Transferencia SPEI&quot; o &quot;Pago a terceros&quot;
+                                    </p>
                                 </li>
                                 <li className="flex">
                                     <span className="flex-shrink-0 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-bold">3</span>

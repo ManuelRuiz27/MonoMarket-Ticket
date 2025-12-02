@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { UploadPdfTemplateDto } from './dto/upload-pdf-template.dto';
 import { EventFiltersDto } from './dto/event-filters.dto';

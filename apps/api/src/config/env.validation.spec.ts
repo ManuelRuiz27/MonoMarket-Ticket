@@ -4,7 +4,6 @@ import { ConfigService } from '@nestjs/config';
 
 describe('EnvValidationService', () => {
     let service: EnvValidationService;
-    let configService: ConfigService;
 
     const createMockConfigService = (envVars: Record<string, string>) => ({
         get: jest.fn((key: string, defaultValue?: string) => {
@@ -24,7 +23,6 @@ describe('EnvValidationService', () => {
         }).compile();
 
         service = module.get<EnvValidationService>(EnvValidationService);
-        configService = module.get<ConfigService>(ConfigService);
     });
 
     it('should be defined', () => {

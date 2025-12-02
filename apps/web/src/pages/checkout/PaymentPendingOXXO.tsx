@@ -128,7 +128,9 @@ export function PaymentPendingOXXO() {
                                 </li>
                                 <li className="flex">
                                     <span className="flex-shrink-0 w-8 h-8 bg-red-600 text-white rounded-full flex items-center justify-center font-bold">3</span>
-                                    <p className="ml-4 text-gray-700">Indica que es un pago de <span className="font-bold">"OXXO Pay"</span></p>
+                                    <p className="ml-4 text-gray-700">
+                                        Indica que es un pago de <span className="font-bold">&quot;OXXO Pay&quot;</span>
+                                    </p>
                                 </li>
                                 <li className="flex">
                                     <span className="flex-shrink-0 w-8 h-8 bg-red-600 text-white rounded-full flex items-center justify-center font-bold">4</span>
