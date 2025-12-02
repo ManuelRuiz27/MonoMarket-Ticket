@@ -1,5 +1,5 @@
 import { Body, Controller, Post } from '@nestjs/common';
-import { PaymentsService } from './payments.service';
+import { PaymentsService, PaymentResult } from './payments.service';
 import { ProcessPaymentDto } from './dto/process-payment.dto';
 
 @Controller('payments')
@@ -7,7 +7,7 @@ export class PaymentsController {
     constructor(private readonly paymentsService: PaymentsService) { }
 
     @Post('pay')
-    async pay(@Body() dto: ProcessPaymentDto) {
+    async pay(@Body() dto: ProcessPaymentDto): Promise<PaymentResult> {
         return this.paymentsService.processPayment(dto);
     }
 }

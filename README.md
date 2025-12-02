@@ -118,6 +118,29 @@ pnpm run docker:prod:down    # Detiene servicios
 
 Puedes gestionarlas a través de un `.env` en el root del proyecto o asignarlas en el entorno donde ejecutes Docker.
 
+## Deploy API en Vercel
+
+El archivo ercel.json deja listo el backend para ejecutarse como Function de Node.js 20. Durante el build se compilan los paquetes compartidos, se aplican las migraciones (prisma migrate deploy) contra la base de datos de Neon y se genera pps/api/dist/vercel.js, que es el handler que expone todo el servidor NestJS dentro de la lambda.
+
+Pasos recomendados:
+
+1. Crea un proyecto en [Vercel](https://vercel.com/) apuntando a la ra?z del monorepo y selecciona pnpm como gestor sin modificar el 
+ootDirectory.
+2. Deja el comando de build incluido en ercel.json:  
+   pnpm run build:packages && pnpm --filter @monomarket/api run prisma:migrate:deploy && pnpm --filter @monomarket/api run build.
+3. Configura las variables sensibles desde el dashboard de Vercel (Production + Preview). Imprescindibles:
+   - DATABASE_URL: ya est? precargada con la instancia de Neon proporcionada (postgresql://neondb_owner:...). Puedes rotar el password cuando lo necesites.
+   - JWT_SECRET: cadena de al menos 64 caracteres.
+   - REDIS_URL: endpoint de la instancia administrada (Upstash, Valkey Cloud, etc.).
+   - API_URL: cambia a tu dominio propio si aplica; por defecto apunta a https://monomarket-api.vercel.app.
+   - FRONTEND_URL y CORS_ORIGIN: URLs del frontend web y del scanner PWA.
+   - Pasarelas de pago (MP_ACCESS_TOKEN, MP_PUBLIC_KEY, OPENPAY_MERCHANT_ID, OPENPAY_API_KEY, OPENPAY_PRIVATE_KEY, OPENPAY_PUBLIC_KEY, OPENPAY_PRODUCTION/OPENPAY_SANDBOX) y SMTP.
+4. Despliega con ercel --prod o desde la UI. Todas las rutas (/(.*)) se redirigen al handler de NestJS, as? que este proyecto de Vercel queda dedicado ?nicamente al backend; los frontends deben residir en proyectos separados.
+
+El handler serverless (pps/api/src/vercel.ts) reutiliza el mismo bootstrap que main.ts, por lo que no hay divergencia entre ejecutar la API con 
+ode dist/main y hacerlo sobre Vercel Functions.
+
+
 ## Base de datos
 
 ```bash

@@ -10,7 +10,7 @@ type CreateMercadoPagoPaymentDto = Pick<
     'method' | 'token' | 'installments' | 'issuerId' | 'paymentMethodId' | 'payer'
 >;
 
-interface PaymentResult {
+export interface PaymentResult {
     paymentId: string;
     providerPaymentId: string;
     status: PaymentStatus;

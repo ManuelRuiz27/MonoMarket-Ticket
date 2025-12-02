@@ -1,0 +1,25 @@
+{
+    "version": 2,
+    "installCommand": "pnpm install --frozen-lockfile",
+    "buildCommand": "pnpm run build:packages && pnpm --filter @monomarket/api run prisma:migrate:deploy && pnpm --filter @monomarket/api run build",
+    "builds": [
+        {
+            "src": "apps/api/dist/vercel.js",
+            "use": "@vercel/node"
+        }
+    ],
+    "routes": [
+        {
+            "src": "/(.*)",
+            "dest": "apps/api/dist/vercel.js"
+        }
+    ],
+    "env": {
+        "NODE_ENV": "production",
+        "LOG_LEVEL": "info",
+        "API_URL": "https://monomarket-api.vercel.app",
+        "FRONTEND_URL": "https://monomarket-web-6pb.pages.dev",
+        "CORS_ORIGIN": "https://monomarket-web-6pb.pages.dev,https://monomarket-scanner.pages.dev",
+        "DATABASE_URL": "postgresql://neondb_owner:npg_zynajLIN4RQ0@ep-mute-cherry-ahp3vd33-pooler.c-3.us-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require"
+    }
+}

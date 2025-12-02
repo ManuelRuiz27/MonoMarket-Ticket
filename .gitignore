@@ -50,3 +50,5 @@ packages/contracts/src/types.ts
 tmp/
 temp/
 *.tmp
+.vercel
+.env*.local

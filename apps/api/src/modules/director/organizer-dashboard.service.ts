@@ -104,7 +104,8 @@ export class OrganizerDashboardService {
         }
 
         // Calcular métricas
-        const totalTicketsSold = event.templates.reduce((sum, t) => sum + t.sold, 0)        const totalRevenue = event.orders.reduce((sum, o) => sum + Number(o.total), 0);
+        const totalTicketsSold = event.templates.reduce((sum, t) => sum + t.sold, 0);
+        const totalRevenue = event.orders.reduce((sum, o) => sum + Number(o.total), 0);
         const totalOrders = event.orders.length;
 
         // Ventas por template
