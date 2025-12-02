@@ -33,7 +33,7 @@ pnpm run test:cov
 
 ```powershell
 # Asegúrate de tener la base de datos corriendo
-pnpm run docker:dev  # o configura PostgreSQL localmente
+# (PostgreSQL local o administrado apuntando a tu DATABASE_URL)
 
 # Ejecutar seeds para tener datos de prueba
 pnpm run prisma:seed

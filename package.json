@@ -20,13 +20,6 @@
     "test:watch": "pnpm -r test:watch",
     "clean": "pnpm -r clean && rm -rf node_modules",
     "typecheck": "pnpm -r exec tsc --noEmit",
-    "docker:dev": "docker-compose -f docker-compose.dev.yml up",
-    "docker:dev:build": "docker-compose -f docker-compose.dev.yml up --build",
-    "docker:dev:down": "docker-compose -f docker-compose.dev.yml down",
-    "docker:prod": "docker-compose up",
-    "docker:prod:build": "docker-compose up --build",
-    "docker:prod:down": "docker-compose down",
-    "docker:clean": "docker-compose down -v && docker system prune -f",
     "worker:dev": "pnpm --filter @monomarket/api-worker run dev",
     "worker:deploy": "pnpm --filter @monomarket/api-worker run deploy",
     "worker:tail": "pnpm --filter @monomarket/api-worker run tail"

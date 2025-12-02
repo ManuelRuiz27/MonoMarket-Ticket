@@ -192,14 +192,18 @@ Nombre: FUND
 ### Paso 1: Preparar Ambiente
 
 ```bash
-# Verificar que los servicios estén corriendo
-docker ps
+# Levantar API + Web en modo desarrollo
+pnpm run dev
 
-# Deberías ver:
-# - monomarket-api-dev
-# - monomarket-web-dev
-# - monomarket-postgres-dev
+# (Opcional) Servicios individuales
+pnpm run dev:api
+pnpm run dev:web
 ```
+
+Verifica manualmente:
+- API: http://localhost:3000/api/health debe responder `OK`.
+- Frontend web: http://localhost:5173 debe cargar el marketplace.
+- Scanner: http://localhost:5174 debe mostrar el login de staff.
 
 ### Paso 2: Ir al Checkout
 
@@ -298,10 +302,10 @@ LIMIT 5;
 ### Verificar en Logs
 
 ```bash
-# Ver logs del API
-docker logs monomarket-api-dev --tail 50 -f
+# Seguir logs del API (en otra terminal)
+pnpm run dev:api
 
-# Buscar:
+# Buscar en la salida:
 # - "Payment created"
 # - "Order status updated"
 # - "Tickets generated"

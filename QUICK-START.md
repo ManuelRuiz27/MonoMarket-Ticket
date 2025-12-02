@@ -113,36 +113,6 @@ URL: http://localhost:5174
 
 ---
 
-## 🔧 Comandos Útiles
-
-### Ver servicios activos
-```bash
-docker ps
-```
-
-### Ver logs del API
-```bash
-docker logs monomarket-api -f
-```
-
-### Recargar datos de prueba
-```bash
-cd apps/api
-npm run prisma:seed
-```
-
-### Detener servicios
-```bash
-docker-compose down
-```
-
-### Reiniciar servicios
-```bash
-docker-compose restart
-```
-
----
-
 ## 📖 Documentación Completa
 
 Ver archivo:
