@@ -26,6 +26,7 @@ describe('PaymentsService', () => {
             getMercadoPagoAccessToken: jest.fn().mockReturnValue('mp-token'),
             getMercadoPagoWebhookSecret: jest.fn().mockReturnValue('mp-hook'),
             getApiBaseUrl: jest.fn().mockReturnValue('https://api.local'),
+            getMercadoPagoWebhookUrl: jest.fn().mockReturnValue('https://api.local/api/webhooks/mercadopago'),
             getMercadoPagoIntegratorId: jest.fn().mockReturnValue(undefined),
         } as unknown as PaymentsConfigService;
         service = new PaymentsService(prisma, config);
@@ -210,6 +211,23 @@ describe('PaymentsService', () => {
         await expect(
             service.processPayment({
                 orderId: 'order-1',
+                provider: 'mercadopago',
+                method: 'card',
+                token: 'token',
+            }),
+        ).rejects.toThrow(BadRequestException);
+    });
+
+    it('throws when order reservation is expired', async () => {
+        prisma.order.findUnique.mockResolvedValue({
+            id: 'order-2',
+            status: 'PENDING',
+            reservedUntil: new Date(Date.now() - 60_000),
+        } as any);
+
+        await expect(
+            service.processPayment({
+                orderId: 'order-2',
                 provider: 'mercadopago',
                 method: 'card',
                 token: 'token',

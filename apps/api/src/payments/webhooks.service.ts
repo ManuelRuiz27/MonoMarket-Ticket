@@ -181,11 +181,14 @@ export class PaymentsWebhooksService {
                     entityId: payment.id,
                     metadata: {
                         provider,
+                        providerPaymentId,
+                        paymentId: payment.id,
+                        orderId: payment.orderId,
                         eventType,
                         payload,
                         paymentStatus: updatedPayment.status,
                         orderStatus,
-                    },
+                    } as Prisma.JsonObject,
                 },
             });
         });

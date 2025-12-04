@@ -83,6 +83,10 @@ export class PaymentsService {
             throw new BadRequestException('Order is not pending payment');
         }
 
+        if (order.reservedUntil && order.reservedUntil < new Date()) {
+            throw new BadRequestException('Order reservation expired');
+        }
+
         const feePlan = order.event?.organizer?.feePlan ?? undefined;
 
         return this.processMercadoPagoPayment(order, {
@@ -101,7 +105,7 @@ export class PaymentsService {
         feePlan?: FeePlan | null,
     ): Promise<PaymentResult> {
         const platformFeeAmount = this.computePlatformFeeAmount(order.total, feePlan);
-        const notificationUrl = `${this.config.getApiBaseUrl()}/webhooks/mercadopago`;
+        const notificationUrl = this.config.getMercadoPagoWebhookUrl();
 
         const payerPayload = this.buildPayerPayload(order, paymentData.payer);
 

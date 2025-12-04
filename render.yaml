@@ -25,23 +25,36 @@ services:
         value: production
       - key: PORT
         value: 3000
+      # Database (Neon)
       - key: DATABASE_URL
         sync: false
+      # JWT
       - key: JWT_SECRET
         sync: false
+      # Redis (reservas de tickets y colas Bull)
+      - key: REDIS_URL
+        sync: false
+      # Logging
       - key: LOG_LEVEL
         value: info
+      # URLs base
       - key: API_URL
         value: https://monomarket-api.onrender.com
       - key: FRONTEND_URL
         value: https://monomarket-web-6pb.pages.dev
       - key: CORS_ORIGIN
         value: https://monomarket-web-6pb.pages.dev,https://monomarket-scanner.pages.dev
+      # Mercado Pago
       - key: MP_ACCESS_TOKEN
         sync: false
       - key: MP_PUBLIC_KEY
         sync: false
+      - key: MP_WEBHOOK_SECRET
+        sync: false
+      # Openpay (tarjetas + pagos alternativos)
       - key: OPENPAY_MERCHANT_ID
+        sync: false
+      - key: OPENPAY_API_KEY
         sync: false
       - key: OPENPAY_PRIVATE_KEY
         sync: false
@@ -49,6 +62,9 @@ services:
         sync: false
       - key: OPENPAY_PRODUCTION
         value: false
+      - key: OPENPAY_SANDBOX
+        value: "true"
+      # SMTP
       - key: SMTP_HOST
         value: smtp.example.com
       - key: SMTP_PORT

@@ -1,12 +1,15 @@
-import { Controller, Get, Param, StreamableFile, Post, UseGuards, HttpException, HttpStatus, Req } from '@nestjs/common';
+import { Controller, Get, Param, StreamableFile, Post, UseGuards, HttpException, HttpStatus, Req, TooManyRequestsException } from '@nestjs/common';
 import { TicketsService } from './tickets.service';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { Request } from 'express';
+import { StaffAuthGuard, StaffAuthenticatedRequest } from '../staff/guards/staff-auth.guard';
+import { RateLimitService } from '../../common/services/rate-limit.service';
 
 
 @Controller('tickets')
 export class TicketsController {
-    constructor(private readonly ticketsService: TicketsService) { }
+    constructor(
+        private readonly ticketsService: TicketsService,
+        private readonly rateLimit: RateLimitService,
+    ) { }
 
     @Get(':id/pdf')
     async downloadPdf(@Param('id') id: string): Promise<StreamableFile> {
@@ -18,11 +21,15 @@ export class TicketsController {
         });
     }
 
-    @Get('validate/:qrCode')
-    @UseGuards(JwtAuthGuard)
-    async validateTicket(@Param('qrCode') qrCode: string) {
+    @Get('verify/:token')
+    @UseGuards(StaffAuthGuard)
+    async verifyTicket(
+        @Param('token') token: string,
+        @Req() req: StaffAuthenticatedRequest & { ip?: string },
+    ) {
+        this.ensureRateLimit(`verify:${req.staffSession?.id}:${req.ip}`, 15, 10_000);
         try {
-            return await this.ticketsService.validateTicket(qrCode);
+            return await this.ticketsService.verifyTicketToken(token, req.staffSession!);
         } catch (error: any) {
             throw new HttpException(
                 error.message || 'Failed to validate ticket',
@@ -32,10 +39,14 @@ export class TicketsController {
     }
 
     @Post('check-in/:qrCode')
-    @UseGuards(JwtAuthGuard)
-    async checkInTicket(@Param('qrCode') qrCode: string) {
+    @UseGuards(StaffAuthGuard)
+    async checkInTicket(
+        @Param('qrCode') qrCode: string,
+        @Req() req: StaffAuthenticatedRequest & { ip?: string },
+    ) {
+        this.ensureRateLimit(`checkin:${req.staffSession?.id}:${req.ip}`, 10, 10_000);
         try {
-            return await this.ticketsService.checkInTicket(qrCode);
+            return await this.ticketsService.checkInTicket(qrCode, req.staffSession!);
         } catch (error: any) {
             throw new HttpException(
                 error.message || 'Failed to check in ticket',
@@ -45,10 +56,13 @@ export class TicketsController {
     }
 
     @Get('event/:eventId/attendance')
-    @UseGuards(JwtAuthGuard)
-    async getEventAttendance(@Param('eventId') eventId: string) {
+    @UseGuards(StaffAuthGuard)
+    async getEventAttendance(
+        @Param('eventId') eventId: string,
+        @Req() req: StaffAuthenticatedRequest,
+    ) {
         try {
-            return await this.ticketsService.getEventAttendance(eventId);
+            return await this.ticketsService.getEventAttendance(eventId, req.staffSession!);
         } catch (error: any) {
             throw new HttpException(
                 error.message || 'Failed to get attendance',
@@ -58,12 +72,15 @@ export class TicketsController {
     }
 
     @Get('staff/events')
-    @UseGuards(JwtAuthGuard)
-    async getStaffEvents(@Req() req: Request & { user?: any }) {
-        if (!req.user?.id) {
-            throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED);
-        }
+    @UseGuards(StaffAuthGuard)
+    async getStaffEvents(@Req() req: StaffAuthenticatedRequest) {
+        return this.ticketsService.getStaffEvents(req.staffSession!);
+    }
 
-        return this.ticketsService.getStaffEvents(req.user.id);
+    private ensureRateLimit(key: string, limit: number, ttlMs: number) {
+        const allowed = this.rateLimit.consume(key, limit, ttlMs);
+        if (!allowed) {
+            throw new TooManyRequestsException('Rate limit exceeded');
+        }
     }
 }

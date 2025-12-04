@@ -5,6 +5,7 @@ import * as jwt from 'jsonwebtoken';
 import { PrismaService } from '../prisma/prisma.service';
 import * as fs from 'fs/promises';
 import * as path from 'path';
+import { createHash } from 'crypto';
 
 interface TicketQRPayload {
     ticketId: string;
@@ -84,8 +85,8 @@ export class PdfGeneratorService {
             const firstPage = pages[0];
 
             // Generar QR con JWT
-            const qrDataUrl = await this.generateQRCode(ticket);
-            const qrImage = await pdfDoc.embedPng(qrDataUrl);
+            const qrBuffer = await this.generateQRCode(ticket);
+            const qrImage = await pdfDoc.embedPng(qrBuffer);
 
             // Posición del QR (configurada por organizador)
             const qrX = event.qrCodeX || 50;
@@ -187,8 +188,8 @@ export class PdfGeneratorService {
         }
 
         // Generar y añadir QR Code
-        const qrDataUrl = await this.generateQRCode(ticket);
-        const qrImage = await pdfDoc.embedPng(qrDataUrl);
+        const qrBuffer = await this.generateQRCode(ticket);
+        const qrImage = await pdfDoc.embedPng(qrBuffer);
 
         page.drawImage(qrImage, {
             x: 350,
@@ -229,7 +230,7 @@ export class PdfGeneratorService {
     /**
      * Genera QR Code con JWT firmado
      */
-    private async generateQRCode(ticket: any): Promise<string> {
+    private async generateQRCode(ticket: any): Promise<Buffer> {
         // Crear payload JWT
         const payload: TicketQRPayload = {
             ticketId: ticket.id,
@@ -249,10 +250,10 @@ export class PdfGeneratorService {
         // URL de verificación
         const verificationUrl = `${this.baseUrl}/api/tickets/verify/${token}`;
 
-        // Generar QR como Data URL (PNG base64)
-        const qrDataUrl = await QRCode.toDataURL(verificationUrl, {
+        // Generar QR como buffer PNG
+        const qrBuffer = await QRCode.toBuffer(verificationUrl, {
             errorCorrectionLevel: 'H',
-            type: 'image/png',
+            type: 'png',
             width: 300,
             margin: 1,
             color: {
@@ -261,8 +262,14 @@ export class PdfGeneratorService {
             },
         });
 
-        // Convertir data URL to buffer
-        return qrDataUrl.replace(/^data:image\/png;base64,/, '');
+        await this.prisma.ticket.update({
+            where: { id: ticket.id },
+            data: {
+                qrJwtHash: this.hashToken(token),
+            },
+        });
+
+        return qrBuffer;
     }
 
     /**
@@ -310,5 +317,9 @@ export class PdfGeneratorService {
 
         this.logger.log(`${pdfs.length} PDFs generados para orden ${orderId}`);
         return pdfs;
+    }
+
+    private hashToken(token: string) {
+        return createHash('sha256').update(token).digest('hex');
     }
 }

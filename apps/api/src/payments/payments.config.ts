@@ -31,6 +31,16 @@ export class PaymentsConfigService {
         return getEnvVar('API_URL', process.env.API_URL);
     }
 
+    /**
+     * URL completa del webhook de Mercado Pago
+     * Normaliza API_URL para asegurar que incluya el prefijo /api antes de /webhooks/mercadopago.
+     */
+    getMercadoPagoWebhookUrl(): string {
+        const base = this.getApiBaseUrl().replace(/\/$/, '');
+        const apiBase = base.endsWith('/api') ? base : `${base}/api`;
+        return `${apiBase}/webhooks/mercadopago`;
+    }
+
     getFrontendBaseUrl(): string {
         return getEnvVar('FRONTEND_URL', process.env.FRONTEND_URL);
     }

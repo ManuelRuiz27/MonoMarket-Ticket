@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import CheckoutSummary from '../../components/checkout/CheckoutSummary';
 import PaymentMethods, { PAYMENT_METHODS } from '../../components/checkout/PaymentMethods';
 import CountdownTimer from '../../components/checkout/CountdownTimer';
-import { apiClient } from '../../api/client';
+import { apiClient, CheckoutOrderSummary } from '../../api/client';
 import { MercadoPagoButton } from '../../features/payments/components/MercadoPagoButton';
 import { MercadoPagoCard } from '../../components/payments/MercadoPagoCard';
 
@@ -18,6 +18,7 @@ export function Checkout() {
     const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(PAYMENT_METHODS[0]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
+    const [orderSummary, setOrderSummary] = useState<CheckoutOrderSummary | null>(null);
 
     const { register, handleSubmit, formState: { errors }, getValues } = useForm();
 
@@ -40,8 +41,17 @@ export function Checkout() {
                 phone: data.phone,
             });
             setCheckoutSession(session);
+            const summary = await apiClient.getCheckoutOrder(session.orderId);
+            setOrderSummary(summary);
         } catch (err: any) {
-            setError(err.message || 'Error al iniciar checkout');
+            const rawMessage = (err?.message as string | undefined)?.toLowerCase();
+            let friendly = 'No pudimos iniciar tu checkout. Intenta nuevamente en unos minutos.';
+            if (rawMessage?.includes('network')) {
+                friendly = 'Hay un problema de conexión. Revisa tu internet e inténtalo de nuevo.';
+            } else if (rawMessage?.includes('order already paid')) {
+                friendly = 'Esta orden ya fue pagada. Revisa tu correo para encontrar tus boletos.';
+            }
+            setError(friendly);
         } finally {
             setLoading(false);
         }
@@ -218,7 +228,7 @@ export function Checkout() {
 
                     {/* Order Summary */}
                     <div className="mt-10 lg:mt-0 lg:col-span-5">
-                        <CheckoutSummary event={eventSummary} tickets={ticketsSummary} />
+                        <CheckoutSummary event={eventSummary} tickets={ticketsSummary} orderSummary={orderSummary} />
                     </div>
 
                 </div>

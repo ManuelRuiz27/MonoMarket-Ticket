@@ -1,17 +1,29 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { CheckoutOrderSummary } from '../../api/client';
 
 interface CheckoutSummaryProps {
     event: any;
     tickets: any[];
+    orderSummary?: CheckoutOrderSummary | null;
 }
 
-const CheckoutSummary: React.FC<CheckoutSummaryProps> = ({ event, tickets }) => {
-    // Calculate totals
-    const subtotal = tickets.reduce((acc, ticket) => acc + (ticket.price * ticket.quantity), 0);
-    const serviceFee = subtotal * 0.10; // 10% service fee example
-    const total = subtotal + serviceFee;
+const CheckoutSummary: React.FC<CheckoutSummaryProps> = ({ event, tickets, orderSummary }) => {
+    const formattedTotal = useMemo(() => {
+        if (!orderSummary) {
+            return null;
+        }
+
+        try {
+            return new Intl.NumberFormat('es-MX', {
+                style: 'currency',
+                currency: orderSummary.currency || 'MXN',
+            }).format(orderSummary.total);
+        } catch {
+            return `${orderSummary.total} ${orderSummary.currency}`;
+        }
+    }, [orderSummary]);
 
     return (
         <div className="bg-white shadow overflow-hidden sm:rounded-lg">
@@ -58,17 +70,11 @@ const CheckoutSummary: React.FC<CheckoutSummaryProps> = ({ event, tickets }) => 
 
                     {/* Totals */}
                     <div className="py-4 sm:py-5 sm:px-6 bg-gray-50">
-                        <div className="flex justify-between text-sm mb-2">
-                            <span className="text-gray-600">Subtotal</span>
-                            <span className="font-medium text-gray-900">${subtotal.toFixed(2)}</span>
-                        </div>
-                        <div className="flex justify-between text-sm mb-2">
-                            <span className="text-gray-600">Cargo por servicio</span>
-                            <span className="font-medium text-gray-900">${serviceFee.toFixed(2)}</span>
-                        </div>
                         <div className="flex justify-between text-base font-bold pt-2 border-t border-gray-200 mt-2">
                             <span className="text-gray-900">Total</span>
-                            <span className="text-indigo-600">${total.toFixed(2)}</span>
+                            <span className="text-indigo-600">
+                                {formattedTotal ?? 'Calculando...'}
+                            </span>
                         </div>
                     </div>
                 </dl>

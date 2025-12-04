@@ -1,4 +1,5 @@
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { apiClient, CheckoutOrderSummary, PaymentResponse } from '../../api/client';
 import { CardPaymentBrickController, getMercadoPagoInstance } from '../../lib/mercadoPago';
 
@@ -13,6 +14,28 @@ type UserData = {
 
 type PaymentStatus = 'idle' | 'loading' | 'ready' | 'processing' | 'success' | 'error';
 
+function mapMercadoPagoErrorToMessage(rawMessage?: string): string {
+    if (!rawMessage) {
+        return 'No pudimos procesar el pago. Revisa los datos de tu tarjeta o intenta con otro método.';
+    }
+
+    const msg = rawMessage.toLowerCase();
+
+    if (msg.includes('invalid parameter') || msg.includes('data insertion')) {
+        return 'Revisa los datos de tu tarjeta (número, vencimiento, código de seguridad y documento).';
+    }
+
+    if (msg.includes('card declined') || msg.includes('card_declined') || msg.includes('tarjeta rechazada')) {
+        return 'Tu tarjeta fue rechazada. Intenta con otra tarjeta o método de pago.';
+    }
+
+    if (msg.includes('insufficient_amount') || msg.includes('fondos insuficientes')) {
+        return 'Tu tarjeta no tiene fondos suficientes para completar el pago.';
+    }
+
+    return 'No pudimos procesar el pago. Intenta nuevamente o usa otro método de pago.';
+}
+
 type Props = {
     orderId: string;
     user: UserData;
@@ -23,6 +46,7 @@ type Props = {
 export function MercadoPagoCard({ orderId, user, onPaymentSuccess, onPaymentError }: Props) {
     const reactId = useId();
     const containerId = useMemo(() => `mp-card-${reactId.replace(/[:]/g, '')}`, [reactId]);
+    const navigate = useNavigate();
     const [status, setStatus] = useState<PaymentStatus>('idle');
     const [error, setError] = useState<string | null>(null);
     const [orderSummary, setOrderSummary] = useState<CheckoutOrderSummary | null>(null);
@@ -129,14 +153,27 @@ export function MercadoPagoCard({ orderId, user, onPaymentSuccess, onPaymentErro
                                 }
 
                                 setPaymentResult(result);
-                                setStatus('success');
-                                onPaymentSuccess?.(result);
+
+                                if (result.status === 'COMPLETED') {
+                                    setStatus('success');
+                                    onPaymentSuccess?.(result);
+                                    navigate(`/checkout/success?orderId=${orderId}&status=completed`);
+                                } else if (result.status === 'PENDING') {
+                                    setStatus('success');
+                                    onPaymentSuccess?.(result);
+                                } else {
+                                    const message = 'Tu pago fue rechazado. Intenta con otra tarjeta o método de pago.';
+                                    setError(message);
+                                    setStatus('error');
+                                    onPaymentError?.(message);
+                                }
+
                                 return result;
                             } catch (submitError: any) {
                                 if (cancelled) {
                                     return;
                                 }
-                                const message = submitError?.message || 'No pudimos procesar el pago. Intenta nuevamente.';
+                                const message = mapMercadoPagoErrorToMessage(submitError?.message);
                                 setError(message);
                                 setStatus('error');
                                 onPaymentError?.(message);
@@ -156,7 +193,7 @@ export function MercadoPagoCard({ orderId, user, onPaymentSuccess, onPaymentErro
                 if (cancelled) {
                     return;
                 }
-                const message = sdkError?.message || 'No pudimos inicializar Mercado Pago.';
+                const message = mapMercadoPagoErrorToMessage(sdkError?.message);
                 setError(message);
                 setStatus('error');
                 onPaymentError?.(message);

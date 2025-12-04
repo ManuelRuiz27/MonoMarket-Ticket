@@ -41,6 +41,7 @@ export type CheckoutOrderSummary = {
 export type PaymentResponse = {
     paymentId: string;
     providerPaymentId: string;
+    status: 'PENDING' | 'COMPLETED' | 'FAILED';
     redirectUrl?: string;
     instructions?: string;
 };

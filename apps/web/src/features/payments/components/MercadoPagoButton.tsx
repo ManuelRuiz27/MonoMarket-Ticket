@@ -1,4 +1,4 @@
-ï»¿import { useId, useMemo, useRef, useState } from 'react';
+import { useId, useMemo, useRef, useState } from 'react';
 import { apiClient } from '../../../api/client';
 import { getMercadoPagoInstance, WalletBrickController } from '../../../lib/mercadoPago';
 
@@ -71,7 +71,16 @@ export function MercadoPagoButton({
             bricksController.current = controller;
             setWalletReady(true);
         } catch (err: any) {
-            const message = err?.message || 'No pudimos iniciar Mercado Pago. Intenta mÃ¡s tarde.';
+            const rawMessage = err?.message as string | undefined;
+            let message = 'No pudimos iniciar Mercado Pago. Intenta más tarde.';
+
+            if (rawMessage?.toLowerCase().includes('unauthorized')) {
+                message = 'No pudimos conectar con Mercado Pago (credenciales no válidas). Intenta más tarde.';
+            } else if (rawMessage?.toLowerCase().includes('network')) {
+                message = 'Hay un problema de conexión. Revisa tu internet e inténtalo de nuevo.';
+            }
+
+
             setError(message);
         } finally {
             setLoading(false);

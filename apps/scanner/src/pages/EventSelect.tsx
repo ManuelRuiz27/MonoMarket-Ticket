@@ -14,14 +14,12 @@ const EventSelect: React.FC = () => {
 
     const loadEvents = async () => {
         try {
-            const data = await apiService.getOrganizerEvents();
+            const data = await apiService.getStaffEvents();
             setEvents(data);
         } catch (err: any) {
-            if (err.response?.status === 401) {
-                navigate('/login');
-            } else {
-                setError('Failed to load events');
-            }
+            apiService.logout();
+            setError('Token inválido o sesión expirada');
+            navigate('/login');
         } finally {
             setLoading(false);
         }

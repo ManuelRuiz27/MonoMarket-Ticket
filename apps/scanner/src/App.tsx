@@ -6,7 +6,7 @@ import Scanner from './pages/Scanner';
 
 function App() {
   const isAuthenticated = () => {
-    return !!localStorage.getItem('token');
+    return !!localStorage.getItem('staffToken');
   };
 
   return (

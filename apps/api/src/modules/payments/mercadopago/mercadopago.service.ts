@@ -62,7 +62,7 @@ export class MercadoPagoService {
         }
 
         const notificationUrl = params.notificationUrl
-            ?? `${this.paymentsConfig.getApiBaseUrl()}/webhooks/mercadopago`;
+            ?? this.paymentsConfig.getMercadoPagoWebhookUrl();
 
         const frontendBase = this.paymentsConfig.getFrontendBaseUrl();
 

@@ -13,6 +13,7 @@ import { LegalModule } from './modules/legal/legal.module';
 import { PrismaModule } from './modules/prisma/prisma.module';
 import { EnvValidationService } from './config/env.validation';
 import { HealthModule } from './modules/health/health.module';
+import { StaffModule } from './modules/staff/staff.module';
 
 @Global()
 @Module({
@@ -33,6 +34,7 @@ import { HealthModule } from './modules/health/health.module';
         DirectorModule,
         LegalModule,
         HealthModule,
+        StaffModule,
     ],
     providers: [EnvValidationService],
     exports: [EnvValidationService],

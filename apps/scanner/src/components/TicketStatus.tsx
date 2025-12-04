@@ -1,8 +1,8 @@
 import React from 'react';
-import type { TicketValidationResult } from '../services/api';
+import type { TicketVerificationResult } from '../services/api';
 
 interface TicketStatusProps {
-    ticket: TicketValidationResult | null;
+    ticket: TicketVerificationResult | null;
     onCheckIn?: () => void;
     checking?: boolean;
     className?: string;
@@ -11,62 +11,78 @@ interface TicketStatusProps {
 const TicketStatus: React.FC<TicketStatusProps> = ({ ticket, onCheckIn, checking, className }) => {
     if (!ticket) return null;
 
-    const isValid = ticket.status === 'VALID' && ticket.orderStatus === 'PAID';
-    const isUsed = ticket.status === 'USED';
-    const isCancelled = ticket.status === 'CANCELLED';
-    const isPending = ticket.orderStatus === 'PENDING';
+    const status = ticket.ticket.status;
+    const isValid = status === 'VALID';
+    const isUsed = status === 'USED';
+    const isCancelled = status === 'CANCELLED';
+    const isExpired = status === 'EXPIRED';
+    const isPending = status === 'RESERVED' || ticket.orderStatus === 'PENDING';
     const classes = ['ticket-status', isValid ? 'valid' : isUsed ? 'used' : 'invalid'];
 
     if (className) {
         classes.push(className);
     }
 
+    const titleMap: Record<string, string> = {
+        VALID: 'Boleto válido',
+        USED: 'Marca como usado',
+        CANCELLED: 'Boleto cancelado',
+        EXPIRED: 'QR expirado',
+        RESERVED: 'Reservado / Pago pendiente',
+        UNPAID: 'Pago pendiente',
+    };
+
+    const title = titleMap[status] || 'Boleto';
+
     return (
         <div className={classes.join(' ')}>
             <div className="status-icon">
-                {isValid ? 'âœ“' : 'âœ—'}
+                {isValid ? '?' : '?'}
             </div>
 
             <div className="status-content">
                 <h2 className="status-title">
-                    {isValid ? 'Valid Ticket' : isUsed ? 'Already Used' : 'Invalid Ticket'}
+                    {title}
                 </h2>
 
                 <div className="ticket-details">
                     <div className="detail-row">
-                        <span className="label">Name:</span>
+                        <span className="label">Nombre:</span>
                         <span className="value">{ticket.buyer.name}</span>
                     </div>
                     <div className="detail-row">
-                        <span className="label">Event:</span>
+                        <span className="label">Evento:</span>
                         <span className="value">{ticket.event.title}</span>
                     </div>
                     <div className="detail-row">
-                        <span className="label">Ticket Type:</span>
-                        <span className="value">{ticket.template.name}</span>
+                        <span className="label">Tipo:</span>
+                        <span className="value">{ticket.ticket.template.name}</span>
                     </div>
                     {ticket.event.venue && (
                         <div className="detail-row">
-                            <span className="label">Venue:</span>
+                            <span className="label">Lugar:</span>
                             <span className="value">{ticket.event.venue}</span>
                         </div>
                     )}
-                    {isUsed && ticket.usedAt && (
+                    {isUsed && ticket.ticket.usedAt && (
                         <div className="detail-row used-at">
-                            <span className="label">Used at:</span>
-                            <span className="value">
-                                {new Date(ticket.usedAt).toLocaleString()}
-                            </span>
+                            <span className="label">Usado:</span>
+                            <span className="value">{new Date(ticket.ticket.usedAt).toLocaleString()}</span>
                         </div>
                     )}
                     {isCancelled && (
                         <div className="detail-row error">
-                            <span className="value">This ticket has been cancelled</span>
+                            <span className="value">Este boleto fue cancelado</span>
+                        </div>
+                    )}
+                    {isExpired && (
+                        <div className="detail-row error">
+                            <span className="value">El QR expiró, solicita reenvío</span>
                         </div>
                     )}
                     {isPending && (
                         <div className="detail-row error">
-                            <span className="value">Payment is pending</span>
+                            <span className="value">Pago pendiente o reserva vigente</span>
                         </div>
                     )}
                 </div>
@@ -77,7 +93,7 @@ const TicketStatus: React.FC<TicketStatusProps> = ({ ticket, onCheckIn, checking
                         onClick={onCheckIn}
                         disabled={checking}
                     >
-                        {checking ? 'Checking in...' : 'Check In'}
+                        {checking ? 'Registrando...' : 'Confirmar entrada'}
                     </button>
                 )}
             </div>

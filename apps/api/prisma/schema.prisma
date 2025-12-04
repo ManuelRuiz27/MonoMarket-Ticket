@@ -41,6 +41,7 @@ model Organizer {
   feePlan   FeePlan?        @relation(fields: [feePlanId], references: [id])
   events    Event[]
   templates TicketTemplate[]
+  staffSessions StaffSession[]
 
   @@map("organizers")
 }
@@ -84,6 +85,7 @@ model Event {
   templates TicketTemplate[]
   orders    Order[]
   staff     EventStaff[]
+  staffSessions StaffSession[]
 
   @@map("events")
 }
@@ -178,6 +180,7 @@ model Ticket {
   qrCode     String       @unique
   status     TicketStatus @default(VALID)
   usedAt     DateTime?
+  qrJwtHash  String?
   createdAt  DateTime     @default(now())
   updatedAt  DateTime @updatedAt
 
@@ -185,6 +188,24 @@ model Ticket {
   template TicketTemplate @relation(fields: [templateId], references: [id])
 
   @@map("tickets")
+}
+
+model StaffSession {
+  id           String   @id @default(uuid())
+  organizerId  String
+  eventId      String
+  tokenHash    String   @unique
+  expiresAt    DateTime
+  revoked      Boolean  @default(false)
+  failedAttempts Int    @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  organizer Organizer @relation(fields: [organizerId], references: [id], onDelete: Cascade)
+  event     Event     @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+  @@map("staff_sessions")
 }
 
 model EventStaff {
