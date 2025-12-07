@@ -4,8 +4,8 @@
     "private": true,
     "description": "MonoMarket Tickets API - NestJS backend",
     "scripts": {
-        "build": "pnpm -w run contracts:generate && pnpm run prisma:generate && nest build",
-        "dev": "pnpm -w run contracts:generate && pnpm run prisma:generate && nest start --watch",
+        "build": "pnpm run prisma:generate && nest build",
+        "dev": "pnpm run prisma:generate && nest start --watch",
         "start": "pnpm run prisma:generate && node dist/apps/api/src/main",
         "start:deploy": "pnpm run prisma:migrate:deploy && node dist/apps/api/src/main",
         "start:prod": "pnpm run prisma:generate && node dist/apps/api/src/main",
@@ -61,7 +61,9 @@
         "reflect-metadata": "^0.2.1",
         "request": "^2.88.2",
         "rxjs": "^7.8.1",
-        "uuid": "^13.0.0"
+        "uuid": "^13.0.0",
+        "pino": "^8.17.2",
+        "pino-pretty": "^10.3.1"
     },
     "devDependencies": {
         "@monomarket/tsconfig": "workspace:*",

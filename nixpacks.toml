@@ -11,6 +11,7 @@ cmds = [
 
 [phases.build]
 cmds = [
+  "pnpm run contracts:generate",
   "pnpm run build:packages",
   "pnpm --filter @monomarket/api run build"
 ]

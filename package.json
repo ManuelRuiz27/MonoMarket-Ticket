@@ -9,6 +9,7 @@
     "contracts:build": "pnpm run contracts:generate && pnpm --filter @monomarket/contracts run build",
     "config:build": "pnpm --filter @monomarket/config run build",
     "build:packages": "pnpm run contracts:build && pnpm run config:build",
+    "build:api": "pnpm run contracts:generate && pnpm run build:packages && pnpm --filter @monomarket/api run build",
     "dev": "pnpm run contracts:generate && pnpm run build:packages && concurrently \"pnpm run dev:api\" \"pnpm run dev:web\"",
     "dev:api": "pnpm --filter @monomarket/api run dev",
     "dev:web": "pnpm --filter @monomarket/web run dev",
