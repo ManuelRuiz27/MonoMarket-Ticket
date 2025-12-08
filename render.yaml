@@ -74,28 +74,36 @@ services:
     plan: free
     ipAllowList: []
 
-  - type: static_site
+  - type: web
     name: monomarket-web
+    env: static
     rootDir: apps/web
     buildCommand: |
-      pnpm install
-      pnpm --filter @monomarket/web build
+      pnpm install --filter @monomarket/web...
+      pnpm --filter @monomarket/web run build
     staticPublishPath: dist
     envVars:
       - key: VITE_API_URL
-        value: https://monomarket-api.onrender.com
+        fromService:
+          type: web
+          name: monomarket-api
+          envVarKey: RENDER_EXTERNAL_URL
       - key: VITE_MP_PUBLIC_KEY
         sync: false
       - key: VITE_MP_LOCALE
         value: es-MX
 
-  - type: static_site
+  - type: web
     name: monomarket-scanner
+    env: static
     rootDir: apps/scanner
     buildCommand: |
-      pnpm install
-      pnpm --filter @monomarket/scanner build
+      pnpm install --filter @monomarket/scanner...
+      pnpm --filter @monomarket/scanner run build
     staticPublishPath: dist
     envVars:
       - key: VITE_API_URL
-        value: https://monomarket-api.onrender.com
+        fromService:
+          type: web
+          name: monomarket-api
+          envVarKey: RENDER_EXTERNAL_URL
