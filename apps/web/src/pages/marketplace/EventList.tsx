@@ -111,10 +111,10 @@ export function EventList() {
                 <div className="container mx-auto px-4">
                     <div className="max-w-3xl">
                         <h1 className="text-5xl font-bold mb-4">
-                            Descubre Eventos Increíbles
+                            Descubre Eventos Increíbles en el Bajío
                         </h1>
                         <p className="text-xl text-primary-100">
-                            Los mejores conciertos, festivales y experiencias en México
+                            Los mejores conciertos, festivales y experiencias en México, con foco en el Bajío
                         </p>
                     </div>
                 </div>
