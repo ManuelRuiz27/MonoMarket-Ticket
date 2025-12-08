@@ -66,7 +66,6 @@ export class PaymentsConfigService {
         [
             'OPENPAY_MERCHANT_ID',
             'OPENPAY_PRIVATE_KEY',
-            'OPENPAY_PUBLIC_KEY',
         ].forEach((name) => getEnvVar(name, process.env[name]));
     }
 }

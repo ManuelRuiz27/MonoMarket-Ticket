@@ -48,7 +48,6 @@ export class EnvValidationService {
         // Validate OpenPay and Mercado Pago credentials in production
         if (nodeEnv === 'production') {
             const openpayMerchantId = this.configService.get<string>('OPENPAY_MERCHANT_ID');
-            const openpayApiKey = this.configService.get<string>('OPENPAY_API_KEY');
             const openpayPrivateKey = this.configService.get<string>('OPENPAY_PRIVATE_KEY');
             const openpayWebhookSecret = this.configService.get<string>('OPENPAY_WEBHOOK_SECRET');
 
@@ -56,11 +55,7 @@ export class EnvValidationService {
                 errors.push('OPENPAY_MERCHANT_ID must be configured in production');
             }
 
-            if (!openpayApiKey || openpayApiKey.startsWith('sk_your')) {
-                errors.push('OPENPAY_API_KEY must be configured in production');
-            }
-
-            if (!openpayPrivateKey || openpayPrivateKey.startsWith('sk_')) {
+            if (!openpayPrivateKey) {
                 errors.push('OPENPAY_PRIVATE_KEY must be configured in production');
             }
 

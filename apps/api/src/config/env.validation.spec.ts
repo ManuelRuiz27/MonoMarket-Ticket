@@ -169,6 +169,8 @@ describe('EnvValidationService', () => {
                 FRONTEND_URL: 'https://monomarket.com',
                 OPENPAY_MERCHANT_ID: 'merchant123',
                 OPENPAY_API_KEY: 'sk_real_key',
+                OPENPAY_PRIVATE_KEY: 'sk_real_private_key',
+                OPENPAY_WEBHOOK_SECRET: 'openpay-webhook-secret',
                 OPENPAY_SANDBOX: 'false',
                 MERCADOPAGO_ACCESS_TOKEN: 'prod-mp-access-token',
                 MERCADOPAGO_PUBLIC_KEY: 'prod-mp-public-key',
@@ -200,6 +202,7 @@ describe('EnvValidationService', () => {
                 FRONTEND_URL: 'https://monomarket.com',
                 OPENPAY_MERCHANT_ID: 'merchant123',
                 OPENPAY_API_KEY: 'sk_real_key',
+                OPENPAY_PRIVATE_KEY: 'sk_real_private_key',
                 OPENPAY_SANDBOX: 'false',
             });
 
@@ -230,6 +233,7 @@ describe('EnvValidationService', () => {
                 FRONTEND_URL: 'https://monomarket.com',
                 OPENPAY_MERCHANT_ID: 'merchant123',
                 OPENPAY_API_KEY: 'sk_real_key',
+                OPENPAY_PRIVATE_KEY: 'sk_real_private_key',
                 OPENPAY_SANDBOX: 'false',
             });
 

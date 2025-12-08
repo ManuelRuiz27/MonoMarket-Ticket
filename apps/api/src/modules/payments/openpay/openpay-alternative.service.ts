@@ -15,8 +15,8 @@ export class OpenpayAlternativePaymentsService {
     private readonly apiUrl: string;
 
     constructor(private prisma: PrismaService) {
+        this.apiKey = process.env.OPENPAY_PRIVATE_KEY || process.env.OPENPAY_API_KEY || '';
         this.merchantId = process.env.OPENPAY_MERCHANT_ID || '';
-        this.apiKey = process.env.OPENPAY_API_KEY || '';
         this.apiUrl = process.env.OPENPAY_SANDBOX === 'true'
             ? 'https://sandbox-api.openpay.mx/v1'
             : 'https://api.openpay.mx/v1';
